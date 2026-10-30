@@ -5,9 +5,21 @@
 
 ## Open it
 
-- **Phone link:** https://claude.ai/artifact/4D2DqCmHDHhv7gPawzePLY (currently shared as "anyone with the link"; change this in the page's Share menu).
-- On your phone, open the link, then **Add to Home Screen**. It works like an app.
+- **App link (GitHub):** https://wkahjian93.github.io/die-with-zero-simulator/ is the version to install on phones and tablets. It has its own icon, opens full screen with no browser bar, and works offline after the first open.
+- **Backup link (Claude):** https://claude.ai/artifact/4D2DqCmHDHhv7gPawzePLY (currently shared as "anyone with the link"; change this in the page's Share menu).
 - Use **one facilitator phone** for the whole table. The game saves after every tap, so if the phone locks or the page closes, reopen it and tap **Continue game**.
+
+## Install it on a phone or tablet
+
+| Device | Steps |
+| --- | --- |
+| iPhone / iPad | Open the app link in **Safari** (not Chrome) → tap **Share** → **Add to Home Screen** → **Add**. |
+| Android | Open the app link in **Chrome** → tap **⋮** → **Install app** (or **Add to Home screen**) → **Install**. |
+
+- The **Die With Zero** icon (yellow with a blue 0) appears on the home screen. Open the game from the icon.
+- **Updates:** when the game changes, open the app once while online. It loads the new version, and saved games are kept.
+- **Saved games stay on that device.** A game started on one phone can't be continued on another.
+- The fonts need internet the first time. Without internet the game still works, in a standard font.
 
 ## Running a game (about 4 minutes per player per round)
 
