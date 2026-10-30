@@ -417,7 +417,7 @@ const SFX=(()=>{
   function musicOn(){if(!prefs.music||timer||!ensure())return;next=ctx.currentTime+.1;timer=setInterval(schedule,60);}
   function musicOff(){if(timer){clearInterval(timer);timer=null;}}
   document.addEventListener('visibilitychange',()=>{if(!ctx)return;document.hidden?ctx.suspend().catch(()=>{}):ctx.resume().catch(()=>{});});
-  return{play,playLong,prefs,unlock(){if(ensure())musicOn();},
+  return{play,playLong,prefs,unlock(){if(ensure())musicOn();},quiet(on){on?musicOff():musicOn();},
     toggle(k){prefs[k]=!prefs[k];savePrefs();if(k==='music')prefs.music?musicOn():musicOff();},
     all(){const on=!(prefs.sfx||prefs.music);prefs.sfx=on;prefs.music=on;savePrefs();on?musicOn():musicOff();return on;}};
 })();
@@ -824,4 +824,6 @@ renderSoundBtn();
 window.claude?.hot?.snapshot?.(()=>({state,history}));
 function start(data){if(data&&data.state){state=data.state;history=data.history||[];}render();}
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+// Access lock (phone app only): pause the turn timer and music while the code screen is up.
+window.dwzLock=locked=>{SFX.quiet(locked);if(locked&&state&&state.phase==='turn'&&state.turn&&state.turn.deadline)ACTIONS.pause();};
 </script>

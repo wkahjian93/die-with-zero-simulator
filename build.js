@@ -26,14 +26,17 @@ const head = `<!doctype html>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head><body>
 `;
-const tail = `
+// Access lock: on when app/gate-config.json has the Google web app URL (or GATE_URL is set for testing).
+const gateUrl = process.env.GATE_URL || JSON.parse(fs.readFileSync(path.join(app, 'gate-config.json'), 'utf8')).url;
+const gate = gateUrl ? `\n<script>\n${fs.readFileSync(path.join(app, 'gate.js'), 'utf8').replace('__GATE_URL__', gateUrl)}</script>` : '';
+const tail = `${gate}
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body></html>
 `;
 fs.writeFileSync(path.join(out, 'index.html'), head + game + tail);
 
 // A new version name makes installed phones pick up the update.
-const version = crypto.createHash('sha1').update(game).digest('hex').slice(0, 10);
+const version = crypto.createHash('sha1').update(head + game + tail).digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(out, 'sw.js'), fs.readFileSync(path.join(app, 'sw.js'), 'utf8').replace('__VERSION__', version));
 fs.copyFileSync(path.join(app, 'manifest.webmanifest'), path.join(out, 'manifest.webmanifest'));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
@@ -52,4 +55,4 @@ if (!fs.existsSync(icon512) || fs.statSync(iconSrc).mtimeMs > fs.statSync(icon51
       `--window-size=512,512`, `--screenshot=${path.join(out, 'icons', name)}`, url], { stdio: 'ignore' });
   }
 }
-console.log('Built docs/ (version ' + version + ')');
+console.log('Built docs/ (version ' + version + ', access lock ' + (gateUrl ? 'ON' : 'off') + ')');

@@ -1,0 +1,61 @@
+<!doctype html>
+<html><head><base target="_top">
+<style>
+body{margin:0;background:#AFD8F4;font-family:Arial,sans-serif;color:#111}
+.wrap{max-width:640px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:20px;margin:0}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:#33414F}
+.card{background:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;border:1px solid #93C6E8}
+.card.pending{border:3px solid #1C56C4;background:#FFF6B5}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.email{font-weight:bold;word-break:break-all}
+.meta{font-size:13px;color:#33414F}
+.tag{font-size:12px;font-weight:bold;padding:2px 8px;border-radius:999px;background:#DDEEFA;white-space:nowrap}
+.tag.pending{background:#FFE135}.tag.unlocked,.tag.approved{background:#167A3F;color:#fff}.tag.rejected,.tag.blocked,.tag.expired{background:#C42647;color:#fff}
+.btns{display:flex;gap:8px}
+button{font:inherit;font-weight:bold;border-radius:10px;border:2px solid #111;padding:10px 14px;cursor:pointer;min-height:44px}
+.ok{background:#1C56C4;color:#fff;border-color:#1C56C4;flex:1}.no{background:#fff}
+.all{background:#FFE135}
+button:disabled{opacity:.5}
+.empty{text-align:center;color:#33414F;padding:20px}
+.err{color:#C42647;font-size:13px}
+</style></head>
+<body><div class="wrap">
+<h1>Approve players · Die With Zero</h1>
+<div class="bar"><span id="info">Loading…</span><button class="all" id="all" hidden>Approve all waiting</button></div>
+<div id="list"></div>
+</div>
+<script>
+const KEY = <?!= JSON.stringify(key) ?>;
+let busy = false;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const time = t => t ? new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : '';
+const label = {pending:'Waiting', approved:'Code sent', unlocked:'Playing', rejected:'Rejected', blocked:'Blocked', expired:'Expired'};
+
+function load() {
+  if (busy) return;
+  google.script.run.withSuccessHandler(draw).withFailureHandler(e => info.textContent = 'Could not load: ' + e.message).adminList(KEY);
+}
+function draw(d) {
+  const waiting = d.rows.filter(r => r.status === 'pending');
+  info.textContent = waiting.length + ' waiting · Gmail can still send ' + d.quota + ' emails today · refreshes every 5 s';
+  all.hidden = waiting.length < 2;
+  list.innerHTML = d.rows.length ? d.rows.map(r => `<div class="card ${r.status}">
+    <div class="top"><span class="email">${esc(r.email)}</span><span class="tag ${r.status}">${label[r.status] || esc(r.status)}</span></div>
+    <div class="meta">${r.group ? 'Group: <b>' + esc(r.group) + '</b> · ' : ''}Asked ${time(r.requested)}${r.expires ? ' · Code valid until ' + time(r.expires) : ''}${r.contact === 'Yes' ? ' · OK to contact' : ''}</div>
+    ${r.device ? `<div class="meta">${esc(r.device)}</div>` : ''}
+    ${r.status === 'pending' ? `<div class="btns"><button class="ok" onclick="act('adminApprove','${r.id}',this)">Approve & email code</button><button class="no" onclick="act('adminReject','${r.id}',this)">Reject</button></div>` : ''}
+  </div>`).join('') : '<div class="empty">No requests in the last 24 hours.</div>';
+}
+function act(fn, id, btn) {
+  busy = true; btn.disabled = true; btn.textContent = 'Working…';
+  google.script.run.withSuccessHandler(() => { busy = false; load(); })
+    .withFailureHandler(e => { busy = false; btn.insertAdjacentHTML('afterend', '<span class="err">' + esc(e.message) + '</span>'); load(); })[fn](KEY, id);
+}
+all.onclick = () => {
+  const ids = [...document.querySelectorAll('.card.pending .ok')];
+  if (!confirm('Approve and email codes to ' + ids.length + ' players?')) return;
+  ids.forEach(b => b.click());
+};
+load(); setInterval(load, 5000);
+</script></body></html>
