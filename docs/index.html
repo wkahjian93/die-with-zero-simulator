@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="Digital game table for the Die With Zero board game, for up to 5 players.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Die With Zero">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+</head><body>
+<title>Die With Zero Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-column phone game table — sticky life-timeline header, stacked action cards, fixed "end turn" bar */
+/* Single light look by choice: light blue table, banana-yellow highlights, black wording */
+:root{
+  --bg:#AFD8F4; --surface:#FFFFFF; --sunk:#DDEEFA; --ink:#111111; --muted:#33414F; --line:#93C6E8;
+  --m:#167A3F; --t:#1C56C4; --h:#C42647; --lep:#111111; --banana:#FFE135; --lep-soft:#FFF6B5;
+  --good:#167A3F; --bad:#C42647;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:14px; color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--t);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 120px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.7rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.2rem;font-weight:700}
+h3{font-size:.95rem;font-weight:500}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.hbar{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:6px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:.8rem;line-height:1.05;letter-spacing:.02em}
+.brand span{background:var(--banana);padding:0 3px;border-radius:3px}
+.life{flex:1;min-width:0;display:flex;align-items:center;gap:3px}
+.life i{flex:1;min-width:0;height:22px;border-radius:5px;background:var(--sunk);font-style:normal;font-size:.64rem;font-weight:700;display:grid;place-items:center;color:var(--muted)}
+.life i.past{background:var(--banana);color:var(--ink)}
+.life i.now{background:var(--ink);color:var(--surface)}
+.hbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 10px;font-size:.82rem;font-weight:600}
+.hbtn:disabled{opacity:.4}
+.hbtn.icon{padding:5px 7px;display:grid;place-items:center}
+.hbtn.icon svg{width:20px;height:20px;display:block}
+
+/* buttons */
+.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:700;background:var(--ink);color:var(--surface);min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.btn.good{background:var(--good);color:#fff}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.lep{background:var(--banana);color:var(--ink);border:2px solid var(--ink)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.block{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.btn{flex:1 1 140px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.done>*{opacity:.6}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tag{font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.tag.warn{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.why{font-size:.82rem;color:var(--bad);font-weight:600}
+
+/* tokens */
+.tokens{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tok{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}
+.tok b{display:block;font-family:var(--f-display);font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums}
+.tok small{font-size:.62rem;font-weight:700;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+.btn.stack{flex-direction:column;gap:2px}
+.btn.stack small{font-weight:600;font-size:.8rem;opacity:.85}
+.tok.m b{color:var(--m)} .tok.t b{color:var(--t)} .tok.h b{color:var(--h)}
+.tok.lep{background:var(--banana);border-color:var(--ink)} .tok.lep b{color:var(--lep)}
+.m{color:var(--m)} .t{color:var(--t)} .h{color:var(--h)} .lp{color:var(--lep)}
+.delta{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* player banner */
+.pbanner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pbanner h1{font-size:1.5rem;overflow-wrap:anywhere}
+.timer{font-family:var(--f-display);font-weight:700;font-size:1.3rem;font-variant-numeric:tabular-nums;border:2px solid var(--line);border-radius:12px;padding:6px 10px;background:var(--surface);min-width:96px;text-align:center}
+.timer.low{border-color:var(--bad);color:var(--bad)}
+.timer.off{font-size:.8rem;color:var(--muted)}
+.banner{border-radius:12px;padding:12px 14px;font-weight:600;background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent)}
+.banner.info{background:var(--surface);color:var(--ink);border-color:var(--line)}
+
+/* experiences */
+.exps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.exp{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;text-align:left;display:flex;flex-direction:column;gap:6px;min-width:0}
+.exp strong{font-size:.92rem;line-height:1.2}
+.exp .cost{font-size:.78rem;font-weight:600;display:flex;gap:8px;flex-wrap:wrap}
+.exp .gain{font-family:var(--f-display);font-size:1rem;color:var(--ink);background:var(--lep-soft);align-self:flex-start;padding:1px 6px;border-radius:6px}
+.exp:disabled{opacity:.42;cursor:not-allowed}
+.exp:not(:disabled):active{transform:scale(.98)}
+
+/* invest */
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:48px;height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:1.4rem;font-weight:700}
+.stepper output{font-family:var(--f-display);font-size:1.5rem;min-width:56px;text-align:center}
+select{font:inherit;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);min-height:48px}
+.dice{display:flex;gap:10px;align-items:center}
+.die{width:52px;height:52px;border-radius:11px;background:var(--surface);border:2px solid var(--ink);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:7px}
+.die span{width:9px;height:9px;border-radius:50%;background:var(--ink);place-self:center;visibility:hidden}
+.die span.on{visibility:visible}
+@keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
+.die.roll{animation:shake .5s ease}
+
+/* risk & dare card */
+.bigcard{border-radius:18px;padding:22px 18px;min-height:220px;display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;border:2px solid var(--ink);background:var(--surface)}
+.bigcard.back{background:repeating-linear-gradient(135deg,var(--ink) 0 12px,color-mix(in srgb,var(--ink) 82%,var(--bg)) 12px 24px);color:var(--surface);border-color:var(--ink)}
+.bigcard.back h2{font-size:1.6rem}
+.bigcard.dare{border-color:var(--ink);background:var(--banana)}
+.bigcard .ev{font-size:1.6rem}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+.flip{animation:flip .35s ease-out}
+.effects{display:flex;flex-direction:column;gap:6px}
+.effects li{list-style:none}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+td.lepc{font-family:var(--f-display);color:var(--lep)}
+.out{color:var(--muted);text-decoration:line-through}
+
+/* setup */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:.9rem}
+input[type=text],input[type=number]{font:inherit;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);min-height:48px;width:100%}
+.count{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.count button{min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-family:var(--f-display);font-weight:700;font-size:1.1rem}
+.count button[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch input{width:24px;height:24px;accent-color:var(--ink)}
+.hero{display:flex;flex-direction:column;gap:8px;padding-block:8px}
+.hero h1{font-size:2.1rem}
+.hero h1 span{background:var(--banana);padding:0 .15em;border-radius:6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+details summary{font-weight:700;cursor:pointer}
+details ul{padding-left:18px;margin:10px 0 0;display:flex;flex-direction:column;gap:6px}
+
+/* log */
+.log{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:.9rem}
+
+/* bottom bar */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.bottom .in{max-width:640px;margin:0 auto;display:flex;gap:10px}
+.bottom .btn{flex:1}
+
+/* sheet / modal */
+.scrim{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,#000 45%,transparent);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;max-width:calc(100% - 32px);text-align:center}
+.rank{display:flex;align-items:center;gap:12px}
+.rank .pos{font-family:var(--f-display);font-weight:700;font-size:1.6rem;width:42px;text-align:center}
+.rank .who{flex:1;min-width:0}
+.rank .score{font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--lep)}
+.rank.first{border:2px solid var(--ink);background:var(--lep-soft)}
+/* emoji wallpaper: money, faces, travel, play, fun */
+#bgdeco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#bgdeco span{position:absolute;font-size:30px;line-height:1;opacity:.24;animation:bob 7s ease-in-out infinite alternate}
+@keyframes bob{from{translate:0 0}to{translate:0 -10px}}
+main.wrap{position:relative;z-index:1}
+/* book notes + coaching */
+.book{margin:0;padding-top:10px;border-top:1px dashed var(--line);font-size:.82rem;color:var(--muted);line-height:1.4}
+.book b{display:block;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:2px}
+.coach{gap:8px}
+.coach .card-h h3{font-size:1rem}
+.coach ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.coach .season{font-size:.86rem;background:var(--sunk);border-radius:10px;padding:8px 10px;margin:0}
+.review{margin:0;padding:10px 12px;border-radius:10px;background:var(--sunk);display:flex;flex-direction:column;gap:6px}
+.review h4{margin:0;font-family:var(--f-display);font-size:.9rem}
+.review ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:.88rem}
+/* on-screen effects */
+#fx{position:fixed;inset:0;z-index:35;pointer-events:none;overflow:hidden}
+.fx-bit{position:absolute;top:0;left:0;line-height:1;will-change:transform}
+.fx-big{position:absolute;left:50%;top:42%;display:flex;flex-direction:column;align-items:center;gap:10px}
+.fx-emoji{position:relative;font-size:110px;line-height:1;filter:drop-shadow(0 6px 12px rgb(0 0 0 / .22))}
+.fx-ring{position:absolute;inset:-22px;border-radius:50%;border:6px solid var(--t)}
+.fx-label{font-family:var(--f-display);font-weight:700;font-size:1.4rem;background:var(--banana);color:var(--ink);border:2px solid var(--ink);border-radius:22px;padding:6px 16px;text-align:center;max-width:calc(100vw - 48px);text-wrap:balance}
+.fx-sad .fx-label,.fx-heart .fx-label{background:var(--surface);color:var(--bad);border-color:var(--bad)}
+.fx-clock{position:relative;width:118px;height:118px;border-radius:50%;background:var(--surface);border:6px solid var(--ink);box-shadow:0 6px 14px rgb(0 0 0 / .22);
+  background-image:repeating-conic-gradient(var(--ink) 0 2deg,transparent 2deg 30deg);background-clip:content-box;padding:4px}
+.fx-clock::after{content:"";position:absolute;inset:14px;border-radius:50%;background:var(--surface)}
+.fx-clock .hand{position:absolute;left:50%;bottom:50%;width:6px;margin-left:-3px;border-radius:3px;background:var(--ink);transform-origin:50% 100%;z-index:1}
+.fx-clock .hand.hr{height:28px}
+.fx-clock .hand.mn{height:42px;width:4px;margin-left:-2px;background:var(--t)}
+.fx-clock .pin{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--ink);z-index:2}
+.fx-time .fx-label{background:var(--surface);color:var(--t);border-color:var(--t)}
+.fx-health .fx-label{background:var(--surface);color:var(--h);border-color:var(--h)}
+.fx-shield .fx-label{background:var(--surface);color:var(--t);border-color:var(--t)}
+/* dice + card-draw animations */
+.anim-scrim{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--ink) 55%,transparent);display:grid;place-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.anim-box{background:var(--surface);border:2px solid var(--ink);border-radius:20px;padding:22px 18px;width:min(340px,100%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;overflow:hidden}
+.anim-dice{display:flex;gap:22px;justify-content:center;padding:22px 0 10px}
+.anim-dice .die{width:86px;height:86px;padding:12px;border-width:3px;transition:transform .12s}
+.anim-dice .die span{width:14px;height:14px}
+.anim-total{font-family:var(--f-display);font-weight:700;font-size:1.6rem;min-height:2.1rem;margin:0}
+.anim-count{font-family:var(--f-display);font-weight:700;font-size:2rem;margin:0;font-variant-numeric:tabular-nums}
+.skip{background:none;border:0;color:var(--muted);font-weight:600;text-decoration:underline;padding:6px 10px;min-height:40px}
+.deck{position:relative;height:190px;width:130px;margin:58px auto 10px;perspective:700px}
+.dcard{position:absolute;inset:0;border-radius:14px;border:2px solid var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:.9rem;padding:10px;text-align:center;animation:shuffle 1.1s ease-in-out infinite;animation-delay:calc(var(--i) * -.18s)}
+.deck.risk .dcard{background:repeating-linear-gradient(135deg,var(--ink) 0 10px,color-mix(in srgb,var(--ink) 78%,var(--surface)) 10px 20px);color:var(--surface)}
+.deck.dare .dcard{background:var(--banana);color:var(--ink)}
+@keyframes shuffle{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-78px) rotate(-14deg)}50%{transform:translateY(-8px)}75%{transform:translateX(78px) rotate(14deg)}}
+.deck.pick .dcard{animation:none;transition:transform .5s}
+.deck.pick .dcard:last-child{animation:pick 2s ease-in-out forwards}
+@keyframes pick{0%{transform:none}35%{transform:translateY(-34px) scale(1.15)}100%{transform:translateY(-24px) scale(1.22) rotateY(720deg)}}
+/* card themes: Dare Yourself = blue + yellow, Risk Event = blue + yellow + black hazard */
+.bigcard{position:relative;overflow:hidden}
+.bigcard.dare{background:var(--banana);border:4px solid var(--t);color:var(--ink);padding-top:34px;padding-bottom:30px}
+.bigcard.dare::before,.bigcard.dare::after{content:"";position:absolute;left:0;right:0;height:14px;background:repeating-linear-gradient(135deg,var(--t) 0 10px,var(--banana) 10px 20px)}
+.bigcard.dare::before{top:0}.bigcard.dare::after{bottom:0}
+.bigcard.dare .eyebrow{color:var(--t)}
+.bigcard.risk{background:var(--surface);border:4px solid var(--ink);padding-top:38px;padding-bottom:32px}
+.bigcard.risk::before{content:"";position:absolute;left:0;right:0;top:0;height:16px;background:repeating-linear-gradient(135deg,var(--ink) 0 12px,var(--banana) 12px 24px)}
+.bigcard.risk::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--t)}
+.bigcard.risk .eyebrow{color:var(--t)}
+.bigcard.back{background:repeating-linear-gradient(135deg,var(--ink) 0 14px,var(--banana) 14px 28px);border:4px solid var(--t);color:var(--banana)}
+.bigcard.back .eyebrow,.bigcard.back h2{align-self:center;background:var(--t);color:var(--banana);border:2px solid var(--ink);border-radius:10px;padding:4px 12px}
+.bigcard.back .eyebrow{color:var(--surface)!important}
+.deck .dcard span{border-radius:9px;padding:6px 8px;border:2px solid var(--ink)}
+.deck.dare .dcard{background:repeating-linear-gradient(135deg,var(--banana) 0 12px,#7FC4F0 12px 24px);border:3px solid var(--t);color:var(--t)}
+.deck.dare .dcard span{background:var(--banana);border-color:var(--t)}
+.deck.risk .dcard{background:repeating-linear-gradient(135deg,var(--ink) 0 12px,var(--banana) 12px 24px);border:3px solid var(--t);color:var(--banana)}
+.deck.risk .dcard span{background:var(--t)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="bgdeco" aria-hidden="true"></div>
+<header><div class="hbar">
+  <div class="brand">DIE WITH<br><span>ZERO</span></div>
+  <div class="life" id="life"></div>
+  <button class="hbtn icon" id="btnSound" data-act="soundAll" aria-label="Turn all sound on or off"></button>
+  <button class="hbtn icon" id="btnUndo" data-act="undo" aria-label="Undo last tap" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+  <button class="hbtn" data-act="menu">Menu</button>
+</div></header>
+<main class="wrap" id="app"></main>
+<div id="layer"></div>
+<div id="fx" aria-hidden="true"></div>
+
+<script>
+/* ---------- Game data (from the printed rule book) ---------- */
+const ROUNDS=[{age:20,T:10,dH:0},{age:30,T:8,dH:1},{age:40,T:6,dH:1},{age:50,T:8,dH:2},{age:60,T:10,dH:2},{age:70,T:10,dH:2},{age:80,T:10,dH:1}];
+const START={M:0,T:10,H:10};
+const EXPS=[
+  {id:'leisure',name:'Enjoy leisure time',m:1,t:1,h:1,lep:1},
+  {id:'bungee',name:'Bungee Jump',m:2,t:2,h:8,lep:8},
+  {id:'europe',name:'Backpack Across Europe',m:4,t:4,h:7,lep:15},
+  {id:'business',name:'Start a Business',m:6,t:5,h:7,lep:20},
+  {id:'japan',name:'Family Japan Trip',m:6,t:3,h:5,lep:10},
+  {id:'maldives',name:'Maldives with Spouse',m:8,t:4,h:5,lep:12},
+  {id:'skill',name:'Learning a new skill',m:3,t:2,h:4,lep:6},
+  {id:'kinabalu',name:'Climbing Mount Kinabalu',m:5,t:3,h:7,lep:14}];
+const RISK={
+  nothing:{name:'Nothing',desc:'Lucky round',impact:'No effect',n:31},
+  minor:{name:'Minor Illness',desc:'Small H drop',impact:'−1 H',ins:'No effect',n:8},
+  critical:{name:'Critical Illness',desc:'Major H drop',impact:'−4 H',ins:'−1 H only, +6 M',n:3},
+  divorce:{name:'Divorce / Breakup',desc:'Emotional damage',impact:'−20 LEP',ins:'Dare yourself: −20 LEP becomes +5 LEP',n:3},
+  accident:{name:'Accident Death',desc:'Game over',impact:'Player dies. Money left becomes legacy LEP (1 M = 1 LEP)',ins:'H becomes 3, +20 M. If H was 3 or less, still dies, but +20 M legacy',n:1}};
+// Money-to-LEP rates: giving while alive is worth double an inheritance.
+const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=20;
+const DARES=['Do a fake commercial selling a pen / bottle / chair.','Act like a very confident model walking a runway.','Do your best evil laugh.','Walk like a duck and sing.','Stick out your tongue and spin around 10 times while combing your hair.','Do 10 jumping jacks and shout a motivational phrase.','Laugh for 20 seconds non-stop (fake allowed).','Act like you just won a million ringgit lottery.','Do 20 push-ups or 40 squats.','Open the window and shout "I am pretty / handsome" 3 times.','Spin yourself around 10 times.','Place both hands on the wall, stick your butt out, and sing the entire song "Two Tigers".','Walk like a zombie who is very happy.','Cross your left elbow over your right elbow, pinch your nose with your right hand, and sing the Elephant Song.','Use an object as a pole and do a pole dance.','Jump like a frog while clucking like a chicken at the same time.','Use your butt to write your surname on the floor.','Sit-ups × 20.','Star jumps × 10.','Plank for 30 seconds.','Introduce yourself in 3 sentences using a baby voice.','Wear socks on both hands, clap them together, and make sounds like a sea lion.','Use your baby voice to sing "Twinkle, Twinkle, Little Star".','Do your best catwalk, but walk like a gorilla.','Act like a T-Rex roaring and searching for food.'];
+const EXAMPLE_NAMES=['Ali','Mei Ling','Kumar','Siti','Jason'];
+const KEY='dwz-sim-v2';
+
+/* ---------- Pure rules ---------- */
+// Final LEP = LEP × (1 + (H − Min H) × 0.2), rounded. Integer maths avoids 0.2 float error.
+function expLEP(e,H){const extra=Math.max(0,H-e.h);return Math.round(e.lep*(5+extra)/5);}
+function investReturn(amount,total){
+  if(total<=5)return{ret:0,label:'Lose'};
+  if(total<=8)return{ret:amount,label:'No gain'};
+  if(total<=10)return{ret:amount*2,label:'×2 return'};
+  return{ret:amount*3,label:'×3 return'};}
+const canEarn=r=>r<=4, canHeal=r=>ROUNDS[r].age<=50, canInsure=r=>ROUNDS[r].age<70;
+// Memory dividend: total LEP snowballs +10% at the end of each round from age 20 to 70.
+const dividend=lep=>lep>0?Math.round(lep*MEMORY_RATE+1e-9):0;
+
+/* ---------- State ---------- */
+let state=null, history=[], ui={investAmt:1,rolling:null,toast:null};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function newRiskDeck(){const d=[];for(const k in RISK)for(let i=0;i<RISK[k].n;i++)d.push(k);return shuffle(d);}
+function drawRisk(){if(!state.riskDeck.length)state.riskDeck=newRiskDeck();return state.riskDeck.pop();}
+function drawDare(){if(!state.dareDeck.length)state.dareDeck=shuffle(DARES.map((_,i)=>i));return state.dareDeck.pop();}
+function save(){try{state?localStorage.setItem(KEY,JSON.stringify(state)):localStorage.removeItem(KEY);}catch(e){}}
+function loadSaved(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return s&&s.v===2&&Array.isArray(s.players)?s:null;}catch(e){return null;}}
+function commit(fn){history.push(JSON.stringify(state));if(history.length>80)history.shift();fn();save();render();}
+const P=()=>state.players[state.cur];
+function log(p,txt){(p.log[state.round]=p.log[state.round]||[]).push(txt);}
+function addLEP(p,n){p.LEP+=n;p.roundLEP[state.round]+=n;}
+
+function cleanNames(raw){
+  const seen={};return raw.map((n,i)=>{let s=String(n||'').replace(/\s+/g,' ').trim().slice(0,18);if(!s)s='Player '+(i+1);
+    const k=s.toLowerCase();if(seen[k]){seen[k]++;s=s+' '+seen[k];}else seen[k]=1;return s;});}
+function newGame(names,settings){
+  state={v:2,phase:'intro',round:0,cur:-1,settings,riskDeck:newRiskDeck(),dareDeck:shuffle(DARES.map((_,i)=>i)),pending:null,turn:null,risk:null,intro:[],divs:{},
+    players:names.map((n,i)=>({id:i,name:n,M:START.M,T:START.T,H:START.H,LEP:0,alive:true,insured:false,noIns:false,used:{},log:[],roundLEP:[0,0,0,0,0,0,0],exps:[],diedAge:null,div:0,given:0,inherit:0}))};
+  beginRound(0);}
+function beginRound(r){
+  state.round=r;state.phase='intro';state.cur=-1;state.intro=[];const R=ROUNDS[r];
+  for(const p of state.players){if(!p.alive)continue;const h0=p.H;p.H=Math.max(0,p.H-R.dH);p.T=R.T;p.insured=false;p.used={};p.riskThisRound=false;p.log[r]=[];
+    if(R.age===70){p.M+=RETIRE_M;log(p,`Retirement income: +${RETIRE_M} M`);}
+    state.intro.push({id:p.id,h0,h1:p.H});}}
+function die(p,why){
+  p.alive=false;p.diedAge=ROUNDS[state.round].age;p.insured=false;
+  const n=p.M*INHERIT_RATE;if(p.M>0){addLEP(p,n);p.inherit+=p.M;}
+  log(p,`${why} at age ${p.diedAge}. ${p.M} M left to the children → +${n} LEP legacy`);p.M=0;return n;}
+// End of round: everyone still alive gets the snowballing memory dividend (not after the final round).
+function closeRound(){
+  state.divs={};if(state.round>=6)return;
+  for(const p of state.players){if(!p.alive)continue;const g=dividend(p.LEP);state.divs[p.id]=g;if(g){addLEP(p,g);p.div+=g;log(p,`Memory dividend: +10% of total → +${g} LEP`);}}}
+// Final scoring at 80: money still held passes on as inheritance at 1 M = 1 LEP.
+function finalize(){
+  for(const p of state.players){if(p.alive&&p.M>0){addLEP(p,p.M*INHERIT_RATE);p.inherit+=p.M;log(p,`Inheritance at 80: ${p.M} M → +${p.M*INHERIT_RATE} LEP`);p.M=0;}}
+  state.phase='final';}
+function nextTurn(){
+  let i=state.cur+1;while(i<state.players.length&&!state.players[i].alive)i++;
+  if(i>=state.players.length){closeRound();state.phase='roundEnd';state.turn=null;return;}
+  state.cur=i;state.phase='turn';state.pending=null;state.risk=null;
+  const ms=state.settings.timer?state.settings.minutes*60000:null;
+  state.turn={deadline:ms?Date.now()+ms:null,paused:null,up:false};}
+
+/* ---------- Action availability ---------- */
+function check(a,p,arg){
+  const r=state.round,t=state.turn;
+  if(t&&t.up)return'Time is up';
+  if(state.pending)return'Finish the dare vote first';
+  const once=k=>p.used[k]?'Already used this round':null;
+  switch(a){
+    case'job':if(!canEarn(r))return'Only in rounds 1–5';return once('earn')||(p.T<3?'Needs 3 T':null);
+    case'career':if(!canEarn(r))return'Only in rounds 1–5';return once('earn')||(p.T<2?'Needs 2 T':null);
+    case'exp':{const e=EXPS.find(x=>x.id===arg);
+      if(p.H<e.h)return'Needs H '+e.h;if(p.M<e.m)return'Needs '+e.m+' M';if(p.T<e.t)return'Needs '+e.t+' T';return null;}
+    case'invest':return once('invest')||(p.M<1?'No money to invest':null);
+    case'time':return(p.M<2?'Needs 2 M':null);
+    case'heal':if(!canHeal(r))return'Only up to age 50';return(p.T<2?'Needs 2 T':(p.H>=START.H?'H is already at max '+START.H:null));
+    case'insure':if(!canInsure(r))return'Not available from age 70';if(p.noIns)return'Not insurable after an illness or accident';return once('insure')||(p.M<2?'Needs 2 M':null);
+    case'give':return once('give')||(p.M<1?'No money to give':null);}
+  return null;}
+
+/* ---------- Event handling ---------- */
+/* ---------- Sound: everything synthesised with Web Audio, no files ---------- */
+const SFX=(()=>{
+  let ctx=null,out,fx,mus,timer=null,next=0,step=0;
+  const prefs={sfx:true,music:true};
+  try{Object.assign(prefs,JSON.parse(localStorage.getItem(KEY+'-sound')||'{}'));}catch(e){}
+  const savePrefs=()=>{try{localStorage.setItem(KEY+'-sound',JSON.stringify(prefs));}catch(e){}};
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  function ensure(){
+    if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
+      try{ctx=new AC();}catch(e){return null;}
+      out=ctx.createGain();out.gain.value=.9;out.connect(ctx.destination);
+      fx=ctx.createGain();fx.gain.value=.55;fx.connect(out);
+      mus=ctx.createGain();mus.gain.value=.11;mus.connect(out);}
+    if(ctx.state==='suspended')ctx.resume().catch(()=>{});return ctx;}
+  function tone(f,t,dur,o={}){
+    const{type='sine',vol=.4,attack=.006,dest=fx,to=null,vib=0}=o;
+    const osc=ctx.createOscillator(),g=ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(f,t);
+    if(to)osc.frequency.exponentialRampToValueAtTime(to,t+dur);
+    if(vib){const l=ctx.createOscillator(),lg=ctx.createGain();l.frequency.value=6;lg.gain.value=vib;l.connect(lg);lg.connect(osc.frequency);l.start(t);l.stop(t+dur+.05);}
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    osc.connect(g);g.connect(dest);osc.start(t);osc.stop(t+dur+.05);}
+  function noise(t,dur,vol,freq,dest=fx){
+    const n=Math.max(1,Math.floor(ctx.sampleRate*dur)),buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+    const s=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=buf;bp.type='bandpass';bp.frequency.value=freq;bp.Q.value=1.2;g.gain.value=vol;
+    s.connect(bp);bp.connect(g);g.connect(dest);s.start(t);}
+  const SOUNDS={
+    click(t){tone(900,t,.06,{type:'triangle',vol:.18});},
+    cash(t){noise(t,.09,.5,2500);tone(1568,t+.06,.1,{type:'square',vol:.12});
+      [2093,2637,3136].forEach((f,i)=>tone(f,t+.14+i*.03,.6,{type:'triangle',vol:.22}));noise(t+.14,.35,.25,7000);},
+    cry(t){[[392,370],[370,349],[349,330]].forEach(([a,b],i)=>tone(a,t+i*.38,.34,{type:'sawtooth',vol:.14,to:b}));
+      tone(330,t+1.14,1.1,{type:'sawtooth',vol:.15,to:262,vib:9});},
+    happy(t){[72,76,79,84].forEach((m,i)=>{tone(hz(m),t+i*.08,.22,{type:'triangle',vol:.28});tone(hz(m+12),t+i*.08,.15,{vol:.08});});
+      tone(hz(88),t+.34,.5,{vol:.12});},
+    sad(t){[[69,.55],[67,.55],[65,.55],[64,1.3]].reduce((at,[m,d])=>{tone(hz(m),t+at,d,{type:'triangle',vol:.26,vib:3});return at+d*.92;},0);
+      [57,60,64].forEach(m=>tone(hz(m-12),t,2.6,{vol:.07,attack:.3}));},
+    lucky(t){[84,86,88,91,93,96,100].forEach((m,i)=>tone(hz(m),t+i*.055,.5,{vol:.16}));tone(hz(108),t+.42,.7,{vol:.06});},
+    ting(t){[0,.3].forEach(d=>{tone(2093,t+d,1.3,{vol:.32});tone(2093*2.76,t+d,.5,{vol:.06});tone(2093*5.4,t+d,.25,{vol:.03});});},
+    dice(t){for(let i=0;i<10;i++){const at=t+i*.055+Math.random()*.03;noise(at,.03,.6,1800+Math.random()*2200);tone(500+Math.random()*500,at,.03,{type:'triangle',vol:.1});}},
+    alarm(t){for(let i=0;i<8;i++){const at=t+i*.26;tone(i%2?1046:1568,at,.22,{type:'square',vol:.3,attack:.003});tone(i%2?1050:1575,at,.22,{type:'sawtooth',vol:.12,attack:.003});}
+      for(let i=0;i<16;i++)tone(3000,t+i*.13,.05,{type:'square',vol:.08});},
+    // 5 s dice rattle that slows down, then two thuds as the dice land.
+    diceLong(t,d){let at=0;while(at<4.8){noise(t+at,.035,.55,1600+Math.random()*2600,d);tone(450+Math.random()*600,t+at,.03,{type:'triangle',vol:.1,dest:d});
+        at+=(.04+Math.pow(at/4.8,2)*.32)*(.7+Math.random()*.6);}
+      [0,.13].forEach(x=>{noise(t+4.85+x,.08,.7,600,d);tone(140,t+4.85+x,.12,{vol:.4,dest:d});});},
+    // 5 s drum roll with card riffles, building to a crash and reveal sting.
+    drumroll(t,d){let at=0;while(at<4.6){const k=at/4.6,gap=.13-k*.095;noise(t+at,.05,.12+k*.45,1800,d);if(Math.random()<.3)noise(t+at+gap/2,.02,.22,5000,d);at+=gap;}
+      noise(t+4.65,1.4,.7,5500,d);tone(98,t+4.65,.8,{vol:.5,dest:d});[84,88,91].forEach((m,i)=>tone(hz(m),t+4.7+i*.08,.7,{type:'triangle',vol:.2,dest:d}));},
+    shield(t){tone(300,t,.35,{type:'sawtooth',vol:.08,to:1200});noise(t,.35,.2,3000);
+      [523,784,1046].forEach((f,i)=>tone(f,t+.3,1.3,{vol:.24-i*.05}));tone(1046*2.7,t+.3,.45,{vol:.05});},
+    // Rewind: whoosh plus a backwards tick-tock that speeds up, then a ding.
+    rewind(t){tone(1400,t,.55,{type:'sawtooth',vol:.06,to:250});noise(t,.5,.25,2000);
+      let at=t+.12;for(let i=0;i<10;i++){tone(i%2?1500:1100,at,.04,{type:'square',vol:.12});noise(at,.02,.3,6000);at+=.16-i*.01;}
+      tone(hz(84),at+.05,.5,{type:'triangle',vol:.2});},
+    // Health: two heavy "pump" thumps, then a power-up arpeggio.
+    power(t){[0,.22].forEach(x=>{tone(160,t+x,.18,{vol:.5,to:80});noise(t+x,.06,.3,400);});
+      [60,64,67,72,76,79,84].forEach((m,i)=>tone(hz(m),t+.45+i*.05,.25,{type:'square',vol:.09}));tone(hz(84),t+.8,.6,{type:'triangle',vol:.22});},
+    fanfare(t){[[72,.15],[76,.15],[79,.15],[84,.6]].reduce((at,[m,d])=>{tone(hz(m),t+at,d+.2,{type:'square',vol:.1});tone(hz(m),t+at,d+.3,{type:'triangle',vol:.2});return at+d;},0);}};
+  function play(name,delay=0){if(!prefs.sfx||!ensure())return;try{SOUNDS[name](ctx.currentTime+.01+delay);}catch(e){}}
+  // Long sounds get their own gain so Skip can fade them out.
+  function playLong(name){if(!prefs.sfx||!ensure())return()=>{};const g=ctx.createGain();g.connect(fx);try{SOUNDS[name](ctx.currentTime+.02,g);}catch(e){}
+    return()=>{try{g.gain.setTargetAtTime(0,ctx.currentTime,.03);setTimeout(()=>g.disconnect(),500);}catch(e){}};}
+  // Happy BGM: I–V–vi–IV in C major, ukulele-like plucks, 120 bpm, loops forever.
+  const MEL=[76,0,79,76,72,0,74,76, 74,0,71,74,79,0,77,74, 72,0,76,72,69,0,71,72, 77,76,74,72,74,0,0,0];
+  const BASS=[48,43,45,41],CHORD=[[60,64,67],[59,62,67],[60,64,69],[60,65,69]];
+  function schedule(){while(next<ctx.currentTime+.25){const s=step%32,bar=s>>3,e=s%8;
+      if(MEL[s])tone(hz(MEL[s]),next,.22,{type:'triangle',vol:.5,dest:mus});
+      if(e===0||e===4)tone(hz(BASS[bar]+(e===4?7:0)),next,.4,{vol:.6,dest:mus});
+      if(e===2||e===6)CHORD[bar].forEach(m=>tone(hz(m),next,.15,{type:'triangle',vol:.14,dest:mus}));
+      if(e%2===1)noise(next,.03,.18,8000,mus);
+      next+=.25;step++;}}
+  function musicOn(){if(!prefs.music||timer||!ensure())return;next=ctx.currentTime+.1;timer=setInterval(schedule,60);}
+  function musicOff(){if(timer){clearInterval(timer);timer=null;}}
+  document.addEventListener('visibilitychange',()=>{if(!ctx)return;document.hidden?ctx.suspend().catch(()=>{}):ctx.resume().catch(()=>{});});
+  return{play,playLong,prefs,unlock(){if(ensure())musicOn();},
+    toggle(k){prefs[k]=!prefs[k];savePrefs();if(k==='music')prefs.music?musicOn():musicOff();},
+    all(){const on=!(prefs.sfx||prefs.music);prefs.sfx=on;prefs.music=on;savePrefs();on?musicOn():musicOff();return on;}};
+})();
+const QUIET=new Set(['soundAll','sfx','music']);
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.disabled||busy)return;
+  const a=b.dataset.act,arg=b.dataset.arg;
+  SFX.unlock();if(!QUIET.has(a))SFX.play('click');
+  const fn=ACTIONS[a];if(fn)fn(arg,b);});
+const ACTIONS={
+  undo(){if(!history.length)return;state=JSON.parse(history.pop());save();ui.rolling=null;render();toast('Undone');},
+  menu(){openMenu();},
+  close(){closeLayer();},
+  count(n){ui.count=+n;render();},
+  start(){
+    const n=ui.count,names=cleanNames([...Array(n)].map((_,i)=>($('#name'+i)||{}).value));
+    let minutes=parseInt(($('#minutes')||{}).value,10);if(!(minutes>=1&&minutes<=15))minutes=4;
+    const settings={timer:$('#timerOn').checked,minutes,keepLEP:$('#keepLEP').checked};
+    history=[];newGame(names,settings);save();render();},
+  resume(){state=ui.saved;ui.saved=null;history=[];render();},
+  discard(){confirmBox('Delete the saved game? This cannot be undone.','Delete saved game',()=>{state=null;save();ui.saved=null;render();});},
+  newgame(){confirmBox('End this game and go back to setup? The current game will be lost.','End game',()=>{state=null;history=[];save();closeLayer();render();});},
+  beginTurns(){commit(()=>nextTurn());},
+  job(){const p=P();commit(()=>{p.T-=3;p.M+=6;p.used.earn=true;log(p,'Stable job: −3 T, +6 M');});SFX.play('cash',.05);burst('money','+6 M');},
+  career(){drawAnimation('dare',()=>commit(()=>{state.pending={k:'career',dare:drawDare()};}));},
+  careerVote(res){const p=P();commit(()=>{p.T-=2;p.used.earn=true;p.risks=(p.risks||0)+1;p.riskThisRound=true;if(res==='pass'){p.M+=12;log(p,'High-risk career PASSED: −2 T, +12 M');}else log(p,'High-risk career FAILED: −2 T, +0 M');state.pending=null;});SFX.play(res==='pass'?'cash':'cry',.05);res==='pass'?burst('money','+12 M'):burst('sad','FAIL · +0 M');},
+  giveAmt(d){const p=P();ui.giveAmt=Math.min(p.M,Math.max(1,(ui.giveAmt||1)+(+d)));render();},
+  giveAll(){ui.giveAmt=P().M;render();},
+  give(){const p=P(),a=Math.min(ui.giveAmt||1,p.M);if(a<1)return;const g=a*GIVE_RATE;
+    commit(()=>{p.M-=a;addLEP(p,g);p.given+=a;p.used.give=true;log(p,`Legacy given while alive: −${a} M → +${g} LEP`);});toast(`+${g} LEP · legacy to children`);SFX.play('happy',.05);burst('happy',`+${g} LEP`);},
+  careerCancel(){commit(()=>{state.pending=null;});},
+  exp(id){const p=P(),e=EXPS.find(x=>x.id===id),g=expLEP(e,p.H);
+    commit(()=>{p.M-=e.m;p.T-=e.t;addLEP(p,g);p.exps.push({name:e.name,age:ROUNDS[state.round].age,lep:g});
+      log(p,`${e.name}: −${e.m} M, −${e.t} T, +${g} LEP`+(g!==e.lep?` (base ${e.lep} at H ${p.H})`:''));});toast(`+${g} LEP · ${e.name}`);SFX.play('happy',.05);burst('happy',`+${g} LEP`);},
+  amt(d){const p=P();ui.investAmt=Math.min(p.M,Math.max(1,(ui.investAmt||1)+(+d)));render();},
+  roll(){const p=P(),a=Math.min(ui.investAmt||1,p.M);if(a<1)return;
+    const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6);ui.rolling=null;rollAnimation(d1,d2,()=>doInvest(a,d1+d2,[d1,d2]));},
+  manualRoll(){const v=parseInt($('#manualDice').value,10);if(!(v>=2&&v<=12)){toast('Pick the dice total first (2–12)');return;}
+    const p=P(),a=Math.min(ui.investAmt||1,p.M);ui.rolling=null;doInvest(a,v,null);},
+  time(){const p=P();commit(()=>{p.M-=2;p.T+=2;log(p,'Bought time: −2 M, +2 T');});SFX.play('rewind',.05);burst('time','+2 T');},
+  heal(){const p=P();commit(()=>{p.T-=2;p.H+=1;log(p,'Recovered health: −2 T, +1 H');});SFX.play('power',.05);burst('health','+1 H');},
+  insure(){const p=P();commit(()=>{p.M-=2;p.insured=true;p.used.insure=true;log(p,'Bought insurance: −2 M (covered this round)');});SFX.play('shield',.05);burst('shield','Insured');},
+  pause(){commit(()=>{const t=state.turn;if(t.deadline){t.paused=Math.max(0,t.deadline-Date.now());t.deadline=null;}else if(t.paused!=null){t.deadline=Date.now()+t.paused;t.paused=null;}});},
+  endTurn(){commit(()=>{state.phase='risk';state.pending=null;state.risk={card:null};});},
+  flip(){drawAnimation('risk',()=>{const p=P(),wasIns=p.insured;commit(()=>{const c=drawRisk();state.risk={card:c,lines:[],wait:false};applyRisk(p,c);});reactRisk(p,state.risk.card,wasIns);});},
+  drawDare(){drawAnimation('dare',()=>commit(()=>{state.risk.dareShown=true;}));},
+  divorce(res){const p=P();commit(()=>{const L=state.risk.lines;if(res==='pass'){addLEP(p,5);L.push('Dare passed: +5 LEP instead of −20');log(p,'Divorce / Breakup: dare passed, +5 LEP');SFX.play('happy',.05);burst('happy','+5 LEP');}
+    else{addLEP(p,-20);L.push('−20 LEP');log(p,'Divorce / Breakup: −20 LEP');SFX.play('cry',.05);burst('sad','−20 LEP');}state.risk.wait=false;});},
+  next(){commit(()=>nextTurn());if(state.phase==='roundEnd'){SFX.play('ting',.05);if(Object.values(state.divs).some(v=>v>0))burst('happy','Memory dividend +10%',300);}},
+  nextRound(){commit(()=>{if(state.round>=6||!state.players.some(p=>p.alive))finalize();else beginRound(state.round+1);});if(state.phase==='final'){SFX.play('fanfare',.05);burst('happy','Age 80 · Final scoring');}else if(ROUNDS[state.round].age===70){SFX.play('cash',.05);burst('money','Retirement +20 M');}},
+  finish(){confirmBox('End the game now and show final results? Money still held is scored as inheritance (1 M = 1 LEP).','Show results',()=>{commit(()=>{finalize();});closeLayer();});},
+  table(){openTable();},
+  soundAll(){const on=SFX.all();renderSoundBtn();toast(on?'Sound and music on':'All sound off');if(on)SFX.play('click');},
+  sfx(){SFX.toggle('sfx');renderSoundBtn();openMenu();},
+  music(){SFX.toggle('music');renderSoundBtn();openMenu();},
+};
+function doInvest(a,total,dice){const p=P(),o=investReturn(a,total);
+  commit(()=>{p.M=p.M-a+o.ret;p.used.invest=true;p.lastInvest={a,total,dice,label:o.label,ret:o.ret};
+    log(p,`Invested ${a} M, rolled ${total} (${o.label}): got back ${o.ret} M (${o.ret-a>=0?'+':''}${o.ret-a})`);});
+  if(o.ret>a){SFX.play('cash',.05);burst('money',`+${o.ret-a} M`);}else if(o.ret<a){SFX.play('cry',.05);burst('sad',`−${a-o.ret} M`);}}
+// Sound + animation after the risk card is revealed.
+function reactRisk(p,c,wasIns){
+  if(c==='nothing'){SFX.play('lucky',.05);burst('lucky','Lucky round');return;}
+  if(c==='divorce'){SFX.play('sad',.05);burst('heart','−20 LEP');return;}
+  if(wasIns&&p.alive){SFX.play('shield',.05);burst('shield','Insurance protected you');
+    const pay=c==='critical'?6:c==='accident'?20:0;if(pay){SFX.play('cash',1);burst('money',`+${pay} M`,1000);}return;}
+  SFX.play('sad',.05);burst('sad',!p.alive?'Died at '+p.diedAge:c==='minor'?'−1 H':'−4 H');}
+function applyRisk(p,c){
+  const L=state.risk.lines,ins=p.insured,age=ROUNDS[state.round].age;
+  if(c==='nothing'){L.push('No effect');}
+  else if(c==='minor'){if(ins)L.push('Insured: no effect');else{p.H=Math.max(0,p.H-1);L.push('−1 H');}}
+  else if(c==='critical'){if(ins){p.H=Math.max(0,p.H-1);p.M+=6;L.push('Insured: −1 H, +6 M');}else{p.H=Math.max(0,p.H-4);L.push('−4 H');}}
+  else if(c==='accident'){
+    if(ins&&p.H>3){p.H=3;p.M+=20;L.push('Insured: H becomes 3, +20 M');}
+    else{let pre='';if(ins){p.M+=20;pre='Insured, but H was '+p.H+' (3 or less): +20 M, ';}
+      const m=p.M,n=die(p,'Died');L.push(`${pre}died at age ${age}. ${m} M passed to the children → +${n} LEP legacy`);}}
+  else if(c==='divorce'){state.risk.wait=true;state.risk.dare=drawDare();}
+  // Any illness or accident makes the player uninsurable from next round.
+  if(p.alive&&(c==='minor'||c==='critical'||c==='accident')&&!p.noIns){p.noIns=true;L.push('Cannot buy insurance for the rest of the game');}
+  if(c!=='divorce'&&c!=='accident')log(p,'Risk: '+RISK[c].name+' → '+L.join(', '));
+  if(c==='accident'&&p.alive)log(p,'Risk: Accident Death → '+L.join(', '));}
+
+/* ---------- Rendering ---------- */
+function tokens(p){return`<div class="tokens">
+  <div class="tok m"><b>${p.M}</b><small>M · MONEY</small></div>
+  <div class="tok t"><b>${p.T}</b><small>T · TIME</small></div>
+  <div class="tok h"><b>${p.H}</b><small>H · HEALTH</small></div>
+  <div class="tok lep"><b>${p.LEP}</b><small>LEP</small></div></div>`;}
+function lifeBar(){const el=$('#life');if(!state||state.phase==='final'&&false){}
+  const r=state?state.round:-1,fin=state&&state.phase==='final';
+  el.innerHTML=ROUNDS.map((R,i)=>`<i class="${fin||i<r?'past':i===r?'now':''}" title="Round ${i+1}">${R.age}</i>`).join('');
+  $('#btnUndo').disabled=!state||!history.length;}
+function render(){
+  lifeBar();const app=$('#app');
+  if(!state){app.innerHTML=renderSetup();renderBottom('');return;}
+  const f={intro:renderIntro,turn:renderTurn,risk:renderRisk,roundEnd:renderRoundEnd,final:renderFinal}[state.phase];
+  app.innerHTML=f();tickTimer();
+  // Jump to the top only when the screen changes (new phase, player or round), not on every tap.
+  const view=state.phase+'|'+state.round+'|'+state.cur;if(view!==ui.view){ui.view=view;window.scrollTo({top:0});}}
+function renderBottom(html){let b=$('#bottomBar');if(!html){b&&b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='bottomBar';b.className='bottom';document.body.appendChild(b);}b.innerHTML=`<div class="in">${html}</div>`;}
+
+function renderSetup(){
+  if(ui.count==null)ui.count=5;if(ui.saved===undefined)ui.saved=loadSaved();
+  const s=ui.saved;
+  return`${s?`<div class="card"><div class="card-h"><h3>Unfinished game found</h3><span class="tag">Round ${s.round+1} · Age ${ROUNDS[s.round].age}</span></div>
+    <p class="small muted">${s.players.map(p=>esc(p.name)).join(', ')}</p>
+    <div class="row"><button class="btn" data-act="resume">Continue game</button><button class="btn ghost" data-act="discard">Delete it</button></div></div>`:''}
+  <section class="hero"><p class="eyebrow">Age 20 → 80 · 7 rounds · up to 5 players</p>
+    <h1>Die With <span>Zero</span> Simulator</h1>
+    <p class="muted">Life is about accumulating life experience. The player with the most LEP at age 80 wins.</p></section>
+  <div class="card"><div class="field"><label>How many players?</label>
+    <div class="count">${[1,2,3,4,5].map(n=>`<button data-act="count" data-arg="${n}" aria-pressed="${ui.count===n}">${n}</button>`).join('')}</div></div>
+    ${[...Array(ui.count)].map((_,i)=>`<div class="field"><label for="name${i}">Player ${i+1}</label><input type="text" id="name${i}" maxlength="18" autocomplete="off" placeholder="e.g. ${EXAMPLE_NAMES[i]}" value="${esc((ui.names||[])[i]||'')}"></div>`).join('')}
+    <p class="small muted">Blank names become "Player 1, 2…". Players take turns in this order.</p></div>
+  <div class="card"><h3>Table settings</h3>
+    <div class="switch"><label for="timerOn">4-minute turn timer</label><input type="checkbox" id="timerOn" checked></div>
+    <div class="switch"><label for="minutes">Minutes per turn</label><input type="number" id="minutes" min="1" max="15" value="4" style="width:90px"></div>
+    <div class="switch"><label for="keepLEP">Players who die keep their LEP for final scoring</label><input type="checkbox" id="keepLEP" checked></div></div>
+  ${rulesHTML()}
+  <button class="btn lep block" data-act="start">Start game at age 20</button>`;}
+
+function rulesHTML(){return`<details><summary>Quick rules</summary><ul class="small">
+  <li>Start: M 0, T 10, H 10. Each round is one decade, from age 20 to 80.</li>
+  <li>Each round T refreshes (10, 8, 6, 8, 10, 10, 10) and H drops with age (0, 1, 1, 2, 2, 2, 1). The app does this automatically.</li>
+  <li>In any order: buy experiences, buy time and recover health as many times as your M, T and H allow. Earn money, invest, insurance and give legacy once per round.</li>
+  <li>Stable job: −3 T, +6 M. High-risk career: −2 T, dare, PASS +12 M. Only in rounds 1–5.</li>
+  <li>Experience LEP = base LEP × (1 + (H − Min H) × 0.2), rounded.</li>
+  <li>Memory dividend: at the end of each round from 20 to 70, total LEP grows by 10% (snowball).</li>
+  <li>Recover health (2 T → 1 H) up to age 50. Retirement income +20 M at age 70.</li>
+  <li>Insurance (2 M) covers this round only. Not available from age 70, or after any illness or accident.</li>
+  <li>Give legacy while alive: 1 M = 2 LEP. Money left when you die or at 80: 1 M = 1 LEP.</li>
+  <li>Only Dare Yourself is done physically. The group votes and the facilitator taps the result.</li></ul></details>`;}
+
+function renderIntro(){const R=ROUNDS[state.round];
+  const rows=state.intro.map(x=>{const p=state.players[x.id];return`<tr><td>${esc(p.name)}</td><td class="t">${R.T}</td><td class="h">${x.h0} → ${x.h1}</td><td class="m">${p.M}</td><td class="lepc">${p.LEP}</td></tr>`;}).join('');
+  const first=state.players.find(p=>p.alive);
+  renderBottom(`<button class="btn lep" data-act="beginTurns">Start ${esc(first.name)}'s turn</button>`);
+  return`<section class="hero"><p class="eyebrow">Round ${state.round+1} of 7</p><h1>Age ${R.age}</h1>
+    <p class="muted">Everyone's T refreshed to <b class="t">${R.T}</b>. Ageing: <b class="h">H −${R.dH}</b>. Last round's insurance has expired.${R.age===50?' <b>Last chance to recover health.</b>':''}${R.age===60?' Health recovery is closed from age 60.':''}${R.age===70?` <b>Retirement income: everyone gets +${RETIRE_M} M.</b> Earning money and insurance are closed from age 70.`:''}${R.age===80?' Final round. Money left at the end becomes inheritance (1 M = 1 LEP), so giving now is worth double.':''}</p></section>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>T</th><th>H</th><th>M</th><th>LEP</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;}
+
+function actionCard(title,key,sub,body,p){const done=p.used[key],n=BOOK[key];
+  return`<section class="card${done?' done':''}"><div class="card-h"><h3>${title}</h3>${done?'<span class="tag ok">Done</span>':`<span class="tag">${sub}</span>`}</div>${body}${n?`<p class="book"><b>Die With Zero · ${n[0]}</b>${n[1]}</p>`:''}</section>`;}
+function btn(act,label,p,arg,cls='ghost'){const w=check(act,p,arg);
+  return`<div style="flex:1 1 140px;display:flex;flex-direction:column;gap:4px"><button class="btn ${cls} block" data-act="${act}"${arg?` data-arg="${arg}"`:''}${w?' disabled':''}>${label}</button>${w&&!/Already|Time is up|Finish/.test(w)?`<span class="why">${w}</span>`:''}</div>`;}
+
+function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
+  if(ui.investAmt>p.M)ui.investAmt=Math.max(1,p.M);
+  let pend='';
+  if(state.pending&&state.pending.k==='career'){pend=`<section class="card"><p class="eyebrow">High-risk career · Dare Yourself</p>
+    <div class="bigcard dare flip"><p class="eyebrow">Dare Yourself</p><h2>${esc(DARES[state.pending.dare])}</h2></div>
+    <p class="small muted">${esc(p.name)} performs the dare now. The group votes. At least 50% PASS wins.</p>
+    <div class="row"><button class="btn good" data-act="careerVote" data-arg="pass">PASS · −2 T, +12 M</button><button class="btn bad" data-act="careerVote" data-arg="fail">FAIL · −2 T, +0 M</button></div>
+    <button class="btn ghost" data-act="careerCancel">Cancel, no cost</button></section>`;}
+  const li=p.lastInvest&&p.used.invest?p.lastInvest:null;
+  const dice=d=>{const pips={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[d];return`<div class="die${ui.rolling?' roll':''}">${[...Array(9)].map((_,i)=>`<span class="${pips.includes(i)?'on':''}"></span>`).join('')}</div>`;};
+  const investBody=li?`<div class="dice">${li.dice?li.dice.map(dice).join(''):''}<div><b class="num">Rolled ${li.total} · ${li.label}</b><p class="small">Invested ${li.a} M, got back <b class="m">${li.ret} M</b> (${li.ret-li.a>=0?'+':''}${li.ret-li.a})</p></div></div>`
+    :`<p class="small muted">Roll 2 dice: 2–5 lose it · 6–8 money back · 9–10 ×2 · 11–12 ×3</p>
+     <div class="stepper"><button data-act="amt" data-arg="-1" aria-label="Less"${p.M<1?' disabled':''}>−</button><output class="m">${p.M<1?0:ui.investAmt} M</output><button data-act="amt" data-arg="1" aria-label="More"${p.M<1?' disabled':''}>+</button><span class="small muted">of ${p.M} M</span></div>
+     <div class="row">${btn('invest','Roll dice in app',p,null,'').replace('data-act="invest"','data-act="roll"')}</div>
+     <div class="row" style="align-items:center"><select id="manualDice" aria-label="Real dice total"><option value="">Rolled real dice?</option>${[2,3,4,5,6,7,8,9,10,11,12].map(n=>`<option>${n}</option>`).join('')}</select>${btn('invest','Use this total',p).replace('data-act="invest"','data-act="manualRoll"')}</div>`;
+  const expBody=`<p class="small muted">Buy as many as you like, as long as you have the M, T and H. Every 1 H above Min H adds 20% LEP.</p><div class="exps">${EXPS.map(e=>{const w=check('exp',p,e.id);
+    return`<button class="exp" data-act="exp" data-arg="${e.id}"${w?' disabled':''}><strong>${e.name}</strong>
+      <span class="cost"><span class="m">${e.m} M</span><span class="t">${e.t} T</span><span class="h">Min H ${e.h}</span></span>
+      <span class="gain">+${p.H>=e.h?expLEP(e,p.H):e.lep} LEP</span>${w&&!/Already|Time|Finish/.test(w)?`<span class="why">${w}</span>`:''}</button>`;}).join('')}</div>`;
+  if(ui.giveAmt>p.M||!ui.giveAmt)ui.giveAmt=Math.max(1,Math.min(ui.giveAmt||1,p.M));
+  const ga=p.M<1?0:ui.giveAmt;
+  const giveBody=`<p class="small muted">Give money to your children while you are alive: 1 M = <b>2 LEP</b>. Money left when you die or at 80 is only 1 M = 1 LEP.</p>
+    <div class="stepper"><button data-act="giveAmt" data-arg="-1" aria-label="Give less"${p.M<1?' disabled':''}>−</button><output class="m">${ga} M</output><button data-act="giveAmt" data-arg="1" aria-label="Give more"${p.M<1?' disabled':''}>+</button><button data-act="giveAll" style="width:auto;padding:0 12px;font-size:.85rem"${p.M<1?' disabled':''}>All</button></div>
+    <div class="row">${btn('give',`Give ${ga} M → +${ga*GIVE_RATE} LEP`,p)}</div>`;
+  renderBottom(`<button class="btn lep" data-act="endTurn"${state.pending?' disabled':''}>End turn · Draw risk card</button>`);
+  return`<div class="pbanner"><div style="min-width:0"><p class="eyebrow">Round ${r+1} · Age ${R.age}</p><h1>${esc(p.name)}</h1></div>
+    ${state.settings.timer?`<button class="timer" id="timer" data-act="pause" aria-label="Pause or resume timer">--:--</button>`:`<span class="timer off">No timer</span>`}</div>
+  ${tokens(p)}
+  <div class="row small">${p.insured?'<span class="tag ok">Insured this round</span>':p.noIns?'<span class="tag warn">Uninsurable</span>':'<span class="tag">Not insured</span>'}<span class="tag">Risk deck: ${state.riskDeck.length} cards</span>${p.div?`<span class="tag">Memory dividends so far: +${p.div}</span>`:''}</div>
+  ${t.up?`<div class="banner">Time's up. Actions are locked. Draw the risk card.</div>`:''}
+  ${pend}
+  ${actionCard('Earn money','earn',canEarn(r)?'Option A or B':'Closed after age 60',`<div class="row">${btn('job','<span>Stable job</span><small>−3 T → +6 M</small>',p,null,'ghost stack')}${btn('career','<span>High-risk career</span><small>−2 T, dare → +12 M</small>',p,null,'ghost stack')}</div>`,p)}
+  ${actionCard('Buy a life experience','exp','LEP cards',expBody,p)}
+  ${actionCard('Invest money','invest','Once per round',investBody,p)}
+  <div class="row" style="align-items:stretch">
+  ${actionCard('Buy time','time','2 M → 2 T',`<div class="row">${btn('time','Buy 2 T',p)}</div>`,p)}
+  ${actionCard('Recover health','heal',canHeal(r)?'2 T → 1 H':'Up to age 50',`<div class="row">${btn('heal','Gain 1 H',p)}</div>`,p)}
+  </div>
+  ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +6 M. Accident: H becomes 3, +20 M (if H is 3 or less, still dies with +20 M legacy). After any illness or accident you can't buy insurance again.</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
+  ${actionCard('Give legacy to children','give','1 M = 2 LEP',giveBody,p)}
+  ${p.log[r]&&p.log[r].length?`<section class="card"><h3>This round</h3><ol class="log">${p.log[r].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></section>`:''}`;}
+
+function renderRisk(){const p=P(),rk=state.risk;
+  if(!rk.card){renderBottom('');return`<div class="pbanner"><div><p class="eyebrow">Round ${state.round+1} · Age ${ROUNDS[state.round].age}</p><h1>${esc(p.name)}</h1></div></div>
+    ${tokens(p)}<p class="muted">${p.insured?'Insured this round.':'<b>Not insured</b> this round.'}</p>
+    <button class="bigcard back" data-act="flip" style="cursor:pointer"><p class="eyebrow" style="color:inherit">Tap to draw</p><h2>Risk Event</h2></button>`;}
+  const c=RISK[rk.card],last=!state.players.slice(state.cur+1).some(x=>x.alive);
+  renderBottom(rk.wait?'':`<button class="btn lep" data-act="next">${last?'End of round '+(state.round+1)+' · See standings':'Next player'}</button>`);
+  return`<div class="pbanner"><div><p class="eyebrow">Round ${state.round+1} · Age ${ROUNDS[state.round].age}</p><h1>${esc(p.name)}</h1></div></div>
+  <div class="bigcard risk flip"><p class="eyebrow">Risk Event</p><h2 class="ev">${c.name}</h2><p class="muted">${c.desc}</p><p><b>Impact:</b> ${c.impact}</p>${c.ins?`<p class="small muted">If insured: ${c.ins}</p>`:''}</div>
+  ${rk.lines.length?`<div class="banner info"><b>Applied:</b> ${rk.lines.map(esc).join(', ')}</div>`:''}
+  ${rk.wait&&!rk.dareShown?`<section class="card"><p class="eyebrow">Dare Yourself to recover</p><p class="small muted">If ${esc(p.name)} does a dare and passes, −20 LEP becomes +5 LEP.</p><button class="btn lep block" data-act="drawDare">Draw a Dare Yourself card</button><button class="btn ghost block" data-act="divorce" data-arg="fail">Skip the dare · −20 LEP</button></section>`:''}
+  ${rk.wait&&rk.dareShown?`<section class="card"><p class="eyebrow">Dare Yourself to recover</p><div class="bigcard dare flip"><h2>${esc(DARES[rk.dare])}</h2></div>
+    <p class="small muted">If ${esc(p.name)} does the dare and passes, −20 LEP becomes +5 LEP.</p>
+    <div class="row"><button class="btn good" data-act="divorce" data-arg="pass">Dare passed · +5 LEP</button><button class="btn bad" data-act="divorce" data-arg="fail">Skipped or failed · −20 LEP</button></div></section>`:''}
+  ${p.alive?tokens(p):`<div class="banner">${esc(p.name)} has died and is out of the game. ${state.settings.keepLEP?`Their ${p.LEP} LEP (including legacy) still counts at the end.`:'Their LEP will not count.'}</div>${reviewHTML(p)}`}`;}
+
+/* ---------- Die With Zero coaching (Bill Perkins' 9 rules, paraphrased) ---------- */
+const BOOK={
+  earn:['Rules 6 & 9','Work is life energy traded for money, so earn with a purpose, not on autopilot. And take your boldest career risks while young, when failing costs the least.'],
+  exp:['Rules 1 & 2','The point of money is great experiences. Start early: an experience bought young pays a memory dividend for every decade that follows.'],
+  invest:['Rule 8','Investing grows money, but money is only a tool. Grow it while you are young, then know when to stop growing it and start using it.'],
+  time:['Money buys time','Time is the scarcest thing you own, especially in your busy 30s and 40s. Paying to free up time for what matters is one of the best uses of money.'],
+  heal:['Health multiplies everything','Every experience is worth more when your body can enjoy it. Investing in health early pays off in every later season of life.'],
+  insure:['Rule 4','Use every tool to help you die with zero. Insurance covers the worst case, so you can spend with confidence instead of hoarding "just in case".'],
+  give:['Rule 5','Give to your children or to charity while you are alive, when it has the most impact. An inheritance usually arrives too late to change their lives.']};
+// Advice for the coming decade (Rule 7: life has seasons).
+const SEASON={
+  30:'Your 30s: health is still strong but time gets tighter. Keep booking experiences that need energy, and use money to buy back time.',
+  40:'Your 40s: the busiest decade, with only 6 T. Choose fewer, bigger experiences, and protect your health while it is still cheap to rebuild.',
+  50:'Your 50s: the last decade to recover health. Many people reach their net-worth peak here, so start shifting from growing money to using it (Rule 8).',
+  60:'Your 60s: no more health recovery. Spend on what your body can still enjoy, and give to your children while it helps them most (Rule 5).',
+  70:'Your 70s: retirement income arrives and earning stops. Money now has one job: become experiences or legacy. Given, 1 M = 2 LEP. Left behind, only 1.',
+  80:'Final decade: any M you still hold becomes inheritance at only 1 LEP. Spend it or give it now (Rule 3).'};
+function coachRound(p,r){
+  const age=ROUNDS[r].age,next=ROUNDS[r+1],now=p.exps.filter(e=>e.age===age),nowLEP=now.reduce((a,e)=>a+e.lep,0);
+  let tag,title;
+  if(now.length>=2||nowLEP>=20){tag='ok';title='Living fully';}
+  else if(p.H<=4&&canHeal(r)){tag='warn';title='Health alert';}
+  else if(!now.length&&p.M>=6){tag='warn';title='All work, no play';}
+  else if(!now.length){tag='';title='A quiet decade';}
+  else{tag='';title='Steady decade';}
+  const obs=[];
+  obs.push(now.length?`You turned money and time into ${now.length} experience${now.length>1?'s':''} (+${nowLEP} LEP). These keep paying memory dividends every decade (Rule 2).`
+    :'No experiences this decade. Saving is not the goal of life; memories are (Rule 1).');
+  if(p.used.give)obs.push('You gave to your children while alive, when it helps them most (Rule 5).');
+  if(p.riskThisRound&&age<=40)obs.push('You took a bold career risk while young, when failure costs the least (Rule 9).');
+  if(p.H<=4&&canHeal(r))obs.push(`Health is down to ${p.H}. Every point of H adds 20% to each experience, so health multiplies everything.`);
+  if(p.M>=8&&age>=40)obs.push(`You are holding ${p.M} M. Money you never use is life energy you worked for and never enjoyed (Rule 3).`);
+  if(p.T>=2)obs.push(`You left ${p.T} T unused. Time can't be saved; it resets every decade (Rule 6).`);
+  if(!p.insured&&!p.noIns&&canInsure(r))obs.push('You played this decade uninsured. Protection lets you spend with confidence instead of hoarding for the worst case (Rule 4).');
+  return{tag,title,lines:obs.slice(0,3),season:next?SEASON[next.age]:''};}
+function coachHTML(r){
+  const alive=state.players.filter(p=>p.alive);if(!alive.length)return'';
+  return`<section class="hero" style="padding-block:4px 0"><p class="eyebrow">Coach's notes · Die With Zero</p></section>`+alive.map(p=>{const c=coachRound(p,r);
+    return`<section class="card coach"><div class="card-h"><h3>${esc(p.name)}</h3><span class="tag ${c.tag}">${c.title}</span></div>
+      <ul>${c.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>${c.season?`<p class="season">${esc(c.season)}</p>`:''}</section>`;}).join('');}
+function lifeReview(p){
+  const lines=[],total=p.exps.reduce((a,e)=>a+e.lep,0),early=p.exps.filter(e=>e.age<=40).reduce((a,e)=>a+e.lep,0);
+  const cutShort=!p.alive&&p.diedAge<80;
+  if(cutShort)lines.push(`Life ended suddenly at ${p.diedAge}. Nobody knows their date, which is exactly why the book says not to postpone living (Rule 6).`);
+  if(!p.exps.length)lines.push('No experiences at all. A life of only work and saving is the ant who never got to play (Rule 1).');
+  else if(total&&early/total>=.5)lines.push(`${Math.round(early/total*100)}% of your experience LEP came by age 40. Front-loading fed your memory dividends (+${p.div} LEP) (Rule 2).`);
+  else lines.push(`Most experiences came after 40. Doing them earlier would have used higher health and earned more memory dividends (+${p.div} LEP so far) (Rules 2 & 7).`);
+  if(p.inherit===0)lines.push('You died with zero: no money left unused (Rule 3).');
+  else lines.push(`You left ${p.inherit} M behind, scored at only ${p.inherit} LEP. Given while alive it would have been ${p.inherit*GIVE_RATE} LEP (Rules 3 & 5).`);
+  if(p.given>0)lines.push(`You gave ${p.given} M to your children while alive (+${p.given*GIVE_RATE} LEP) (Rule 5).`);
+  if(p.risks)lines.push(`You took ${p.risks} high-risk career ${p.risks>1?'bets':'bet'} (Rule 9).`);
+  const title=cutShort?'A life cut short':p.inherit===0&&p.exps.length>=4?'Died with zero: a life well spent':p.inherit>=15?'Rich in money, poor in memories':!p.exps.length?'A life on autopilot':'A life with lessons';
+  lines.push('Real-life takeaway: list the experiences you want in each decade first, then plan your money to fund them, not the other way round.');
+  return{title,lines};}
+function reviewHTML(p){const v=lifeReview(p);
+  return`<div class="review"><h4>Life review · ${esc(v.title)}</h4><ul>${v.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul></div>`;}
+function standings(){return[...state.players].sort((a,b)=>score(b)-score(a));}
+function score(p){return!p.alive&&!state.settings.keepLEP?-1e9:p.LEP;}
+function renderRoundEnd(){const r=state.round,lastRound=r>=6||!state.players.some(p=>p.alive);
+  renderBottom(`<button class="btn lep" data-act="nextRound">${lastRound?'See final results':'Start round '+(r+2)+' · Age '+ROUNDS[r+1].age}</button>`);
+  return`<section class="hero"><p class="eyebrow">End of round ${r+1} · Age ${ROUNDS[r].age}</p><h1>Standings</h1></section>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>Round</th><th>Memory</th><th>M</th><th>H</th><th>LEP</th></tr></thead><tbody>
+  ${standings().map(p=>{const d=state.divs[p.id]||0,rr=p.roundLEP[r];return`<tr><td class="${p.alive?'':'out'}">${esc(p.name)}${p.alive?'':' (died)'}</td><td class="delta ${rr<0?'h':''}">${rr>=0?'+':''}${rr}</td><td class="delta">${p.alive&&r<6?'+'+d:'–'}</td><td class="m">${p.M}</td><td class="h">${p.H}</td><td class="lepc">${p.LEP}</td></tr>`;}).join('')}
+  </tbody></table></div>
+  <p class="small muted">${r<6?'Memory = snowball dividend: +10% of each living player\'s total LEP, already included in Round and LEP.':'No memory dividend after the final round. Money left now becomes inheritance at 1 M = 1 LEP.'}</p></div>
+  ${coachHTML(r)}
+  ${lastRound?'':`<p class="small muted">Next round: T refreshes to ${ROUNDS[r+1].T}, H −${ROUNDS[r+1].dH}.${ROUNDS[r+1].age===60?' Health recovery closes.':''}${ROUNDS[r+1].age===70?` Retirement income +${RETIRE_M} M. Earning money and insurance close.`:''}</p>`}`;}
+
+function renderFinal(){renderBottom(`<button class="btn ghost" data-act="newgame">New game</button>`);
+  const list=standings();let pos=0,prev=null;
+  const ranks=list.map((p,i)=>{const s=score(p);if(s!==prev){pos=i+1;prev=s;}return{p,pos};});
+  const winners=ranks.filter(x=>x.pos===1).map(x=>esc(x.p.name)).join(' & ');
+  return`<section class="hero"><p class="eyebrow">Final scoring · Age 80</p><h1>Best life lived: <span>${winners}</span></h1>
+    <p class="muted">Winner = highest LEP. Money given while alive scored double; money left behind scored once.</p></section>
+  ${ranks.map(({p,pos})=>`<section class="card rank${pos===1?' first':''}"><div class="rank"><div class="pos">${pos}</div>
+      <div class="who"><h3>${esc(p.name)}</h3><p class="small muted">${p.alive?'Reached 80':'Died at age '+p.diedAge}${!p.alive&&!state.settings.keepLEP?' · LEP not counted':''} · H ${p.H}</p></div>
+      <div class="score num">${p.LEP}</div></div>
+      <p class="small num">Memory dividends <b>+${p.div}</b> · Given alive <b>${p.given} M → +${p.given*GIVE_RATE}</b> · Left behind <b>${p.inherit} M → +${p.inherit*INHERIT_RATE}</b></p>
+      ${p.exps.length?`<p class="small">${p.exps.map(e=>`${esc(e.name)} <span class="muted">(${e.age}, +${e.lep})</span>`).join(' · ')}</p>`:'<p class="small muted">No experiences bought.</p>'}${reviewHTML(p)}</section>`).join('')}
+  <section class="card"><h3>LEP gained per decade</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th>${ROUNDS.map(R=>`<th>${R.age}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+    ${list.map(p=>`<tr><td>${esc(p.name)}</td>${p.roundLEP.map((v,i)=>`<td class="${v<0?'h':''}">${i<=state.round?v:'–'}</td>`).join('')}<td class="lepc">${p.LEP}</td></tr>`).join('')}</tbody></table></div></section>
+  <section class="card"><p class="eyebrow">Debrief</p><h2>Maximise life experience. No more autopilot.</h2>
+    <ul class="small" style="padding-left:18px;margin:0;display:flex;flex-direction:column;gap:6px">
+      <li>Who left money behind instead of giving it while alive? Those LEP were worth half.</li>
+      <li>Whose early experiences snowballed the most through memory dividends?</li>
+      <li>When was your health highest, and what did you do with it?</li>
+      <li>Which risk card hurt most, and would insurance have changed it?</li>
+      <li>Planning areas to discuss: legacy planning, medical planning, saving planning, income protection planning.</li></ul>
+    <p class="small muted">Coaching in this game is based on the ideas in Bill Perkins' book Die With Zero, for learning and discussion. It is not personal financial advice.</p></section>`;}
+
+/* ---------- On-screen animations ---------- */
+let busy=false;
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const pipHTML=n=>[...Array(9)].map((_,i)=>`<span class="${PIPS[n].includes(i)?'on':''}"></span>`).join('');
+const BURST={
+  money:{big:'💰',bits:['💵','💰','🪙','💸','💵'],dir:'down',n:24},
+  happy:{big:'😄',bits:['😄','😊','🥳','😁','🤩','😆'],dir:'up',n:18},
+  sad:{big:'😢',bits:['😢','😭','😞','☹️'],dir:'down',n:16,slow:true},
+  heart:{big:'❤️',bits:['💔','💔','😢'],dir:'down',n:14,slow:true},
+  time:{big:'',bits:['⏳','⌛','🕰️','⏰'],dir:'up',n:14},
+  health:{big:'💪',bits:['💪','🥦','🍎','🏋️','🥗','🏃','❤️'],dir:'up',n:18},
+  shield:{big:'🛡️',bits:['✨','🛡️','✨'],dir:'up',n:12},
+  lucky:{big:'🍀',bits:['🍀','✨','⭐'],dir:'up',n:14}};
+function burst(kind,label,delay=0){setTimeout(()=>{
+  const K=BURST[kind],L=$('#fx'),W=innerWidth,H=innerHeight;
+  for(let i=0;i<K.n;i++){const s=document.createElement('span');s.className='fx-bit';s.textContent=K.bits[i%K.bits.length];s.style.fontSize=(22+Math.random()*26)+'px';L.appendChild(s);
+    const x=Math.random()*(W-40),y0=K.dir==='down'?-60:H+10,y1=K.dir==='down'?H+60:-80,dx=(Math.random()*2-1)*90,rot=(Math.random()*2-1)*(K.slow?90:360);
+    s.animate([{transform:`translate(${x}px,${y0}px) rotate(0deg)`,opacity:1},{transform:`translate(${x+dx}px,${y1}px) rotate(${rot}deg)`,opacity:K.slow?.35:1}],
+      {duration:(K.slow?2800:1800)+Math.random()*800,delay:Math.random()*500,easing:K.dir==='down'?'cubic-bezier(.35,0,.75,1)':'cubic-bezier(.15,.6,.35,1)',fill:'both'}).onfinish=()=>s.remove();}
+  const c=document.createElement('div');c.className='fx-big fx-'+kind;
+  c.innerHTML=`<div class="fx-emoji">${kind==='time'?'<div class="fx-clock"><i class="hand hr"></i><i class="hand mn"></i><i class="pin"></i></div>':K.big}${kind==='shield'?'<i class="fx-ring"></i>':''}</div>${label?`<div class="fx-label">${esc(label)}</div>`:''}`;L.appendChild(c);
+  const at=(x,y,sc,more={})=>Object.assign({transform:`translate(-50%,${y}%) translateX(${x}px) scale(${sc})`},more);
+  const slow=kind==='heart'||kind==='sad',dur=slow?2600:1900;
+  const frames=kind==='heart'?[at(0,-50,.3,{opacity:0}),at(0,-50,1.15,{opacity:1,offset:.15}),at(-10,-50,1,{offset:.25}),at(10,-50,1,{offset:.32}),at(-10,-50,1,{offset:.39}),at(0,-50,1,{opacity:1,offset:.8}),at(0,-25,.9,{opacity:0})]
+    :slow?[at(0,-50,.4,{opacity:0}),at(0,-50,1,{opacity:1,offset:.2}),at(0,-44,1,{opacity:1,offset:.8}),at(0,-25,.9,{opacity:0})]
+    :[at(0,-50,.3,{opacity:0}),at(0,-50,1.2,{opacity:1,offset:.2}),at(0,-50,1,{opacity:1,offset:.35}),at(0,-50,1,{opacity:1,offset:.8}),at(0,-75,.9,{opacity:0})];
+  c.animate(frames,{duration:dur,easing:'ease-out',fill:'both'}).onfinish=()=>c.remove();
+  if(kind==='heart')setTimeout(()=>{const e=c.querySelector('.fx-emoji');if(e)e.textContent='💔';},dur*.42);
+  // Clock hands spin backwards: time bought back.
+  if(kind==='time'){c.querySelector('.mn').animate([{transform:'rotate(0deg)'},{transform:'rotate(-1080deg)'}],{duration:1500,easing:'cubic-bezier(.3,0,.3,1)',fill:'both'});
+    c.querySelector('.hr').animate([{transform:'rotate(90deg)'},{transform:'rotate(0deg)'}],{duration:1500,easing:'cubic-bezier(.3,0,.3,1)',fill:'both'});}
+  // Muscle flexes three times.
+  if(kind==='health')c.querySelector('.fx-emoji').animate([{transform:'scale(1) rotate(0)'},{transform:'scale(1.3) rotate(-12deg)'},{transform:'scale(1) rotate(0)'}],{duration:420,delay:250,iterations:3,easing:'ease-in-out'});
+  if(kind==='shield')c.querySelector('.fx-ring').animate([{transform:'scale(.6)',opacity:1},{transform:'scale(1.8)',opacity:0}],{duration:900,iterations:2});
+},delay);}
+function animModal(html){const o=document.createElement('div');o.className='anim-scrim';o.setAttribute('role','dialog');o.innerHTML=`<div class="anim-box">${html}</div>`;document.body.appendChild(o);return o;}
+// Animations don't eat into the player's 4-minute turn.
+function holdTimer(ms){const t=state&&state.phase==='turn'&&state.turn;if(t&&t.deadline){t.deadline+=ms;save();}}
+function rollAnimation(d1,d2,done){
+  busy=true;holdTimer(5000);
+  const o=animModal(`<p class="eyebrow">Rolling the dice</p><div class="anim-dice"><div class="die">${pipHTML(1)}</div><div class="die">${pipHTML(1)}</div></div><p class="anim-total">…</p><button class="skip">Skip</button>`);
+  const stop=SFX.playLong('diceLong'),[A,B]=o.querySelectorAll('.die'),T0=Date.now(),DUR=5000;let last=0,gap=50,ended=false;
+  const end=()=>{if(ended)return;ended=true;A.innerHTML=pipHTML(d1);B.innerHTML=pipHTML(d2);A.style.transform=B.style.transform='none';
+    o.querySelector('.anim-total').textContent=`${d1} + ${d2} = ${d1+d2}`;setTimeout(()=>{o.remove();busy=false;done();},1000);};
+  o.querySelector('.skip').onclick=()=>{stop();end();};
+  (function tick(){if(ended)return;const now=Date.now(),el=now-T0;if(el>=DUR)return end();
+    if(now-last>=gap){last=now;const k=1-el/DUR,r=()=>1+Math.floor(Math.random()*6),wob=()=>`rotate(${((Math.random()*2-1)*40*k).toFixed(0)}deg) translateY(${(-Math.random()*26*k).toFixed(0)}px)`;
+      A.innerHTML=pipHTML(r());B.innerHTML=pipHTML(r());A.style.transform=wob();B.style.transform=wob();gap=50+Math.pow(el/DUR,2)*380;}
+    setTimeout(tick,25);})();}
+function drawAnimation(kind,done){
+  busy=true;holdTimer(5000);
+  const label=kind==='risk'?'Risk Event':'Dare Yourself';
+  const o=animModal(`<p class="eyebrow">Shuffling the ${label} deck</p><div class="deck ${kind}">${[0,1,2,3,4,5].map(i=>`<div class="dcard" style="--i:${i}"><span>${label}</span></div>`).join('')}</div><p class="anim-count">5</p><button class="skip">Skip</button>`);
+  const stop=SFX.playLong('drumroll'),deck=o.querySelector('.deck'),cnt=o.querySelector('.anim-count'),T0=Date.now(),DUR=5000;let ended=false;
+  const end=()=>{if(ended)return;ended=true;clearInterval(iv);o.remove();busy=false;done();};
+  const iv=setInterval(()=>{const el=Date.now()-T0;cnt.textContent=Math.max(0,Math.ceil((DUR-el)/1000));
+    if(el>=DUR-2000&&!deck.classList.contains('pick')){deck.classList.add('pick');o.querySelector('.eyebrow').textContent='Drawing your card…';}
+    if(el>=DUR)end();},100);
+  o.querySelector('.skip').onclick=()=>{stop();end();};}
+/* ---------- Timer ---------- */
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function tickTimer(){const el=$('#timer');if(!el||!state||state.phase!=='turn')return;const t=state.turn;
+  if(t.up){el.textContent='0:00';el.classList.add('low');return;}
+  const left=t.deadline?t.deadline-Date.now():t.paused;
+  el.textContent=(t.deadline?'':'❚❚ ')+fmt(left);el.classList.toggle('low',left<=30000);
+  if(t.deadline&&left<=0){t.up=true;save();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}render();toast("Time's up for "+P().name);SFX.play('alarm');shakeScreen();}}
+// Time's up: violent whole-screen shake with red flashes, as long as the alarm (~2 s).
+function shakeScreen(){
+  const frames=[];for(let i=0;i<=40;i++){const k=i===40?0:1-i/48,r=()=>(Math.random()*2-1);
+    frames.push({transform:`translate(${(r()*22*k).toFixed(1)}px,${(r()*16*k).toFixed(1)}px) rotate(${(r()*3.5*k).toFixed(2)}deg)`});}
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)
+    ['header','#app','#bottomBar','#bgdeco'].forEach(sel=>{const el=$(sel);if(el)el.animate(frames,{duration:2100,easing:'linear'});});
+  const f=document.createElement('div');f.style.cssText='position:absolute;inset:0;background:var(--bad)';$('#fx').appendChild(f);
+  f.animate([{opacity:0},{opacity:.45},{opacity:0},{opacity:.4},{opacity:0},{opacity:.35},{opacity:0},{opacity:.25},{opacity:0}],{duration:2100}).onfinish=()=>f.remove();}
+setInterval(tickTimer,500);
+
+/* ---------- Layers ---------- */
+function closeLayer(){$('#layer').innerHTML='';}
+function sheet(html){$('#layer').innerHTML=`<div class="scrim" data-scrim><div class="sheet" role="dialog">${html}</div></div>`;}
+document.addEventListener('click',e=>{if(e.target.matches('[data-scrim]'))closeLayer();});
+document.addEventListener('input',e=>{const m=/^name(\d)$/.exec(e.target.id||'');if(m){(ui.names=ui.names||[])[+m[1]]=e.target.value;}});
+function confirmBox(msg,ok,fn){sheet(`<h2>Are you sure?</h2><p>${esc(msg)}</p><div class="row"><button class="btn bad" id="cfOk">${esc(ok)}</button><button class="btn ghost" data-act="close">Cancel</button></div>`);
+  $('#cfOk').onclick=()=>{closeLayer();fn();};}
+function openMenu(){sheet(`<h2>Menu</h2>
+  ${state?`<button class="btn ghost block" data-act="table">Scoreboard: all players</button>`:''}
+  <div class="row"><button class="btn ghost" data-act="sfx">Sound effects: ${SFX.prefs.sfx?'On':'Off'}</button><button class="btn ghost" data-act="music">Music: ${SFX.prefs.music?'On':'Off'}</button></div>
+  ${state&&state.phase!=='final'?`<button class="btn ghost block" data-act="finish">End game now and score</button>`:''}
+  ${state?`<button class="btn ghost block" data-act="newgame">New game</button>`:''}
+  ${rulesHTML()}<button class="btn block" data-act="close">Close</button>`);}
+function openTable(){sheet(`<h2>Scoreboard · Age ${ROUNDS[state.round].age}</h2><div class="tbl-wrap"><table><thead><tr><th>Player</th><th>M</th><th>T</th><th>H</th><th>LEP</th></tr></thead><tbody>
+  ${state.players.map(p=>`<tr><td class="${p.alive?'':'out'}">${esc(p.name)}${p.insured&&p.alive?' 🛡':''}</td><td class="m">${p.M}</td><td class="t">${p.T}</td><td class="h">${p.H}</td><td class="lepc">${p.LEP}</td></tr>`).join('')}</tbody></table></div>
+  <button class="btn block" data-act="close">Close</button>`);}
+function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),1800);}
+
+function renderSoundBtn(){const on=SFX.prefs.sfx||SFX.prefs.music,b=$('#btnSound');
+  b.setAttribute('aria-pressed',on);
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>'+(on?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>':'<path d="M17 9l5 6M22 9l-5 6"/>')+'</svg>';}
+function paintBackground(){
+  const icons=['💰','💵','🤑','😄','😊','😢','😭','✈️','🏝️','🧳','🎮','🎲','🎉','🎈','😂','🤣','🎡','🪂','⛰️','🌏'];
+  let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  let html='',i=0;
+  for(let r=0;r<12;r++)for(let c=0;c<5;c++){const left=(c*20+(r%2)*10+rnd()*8-4+100)%100,top=r*8.6+rnd()*4;
+    html+=`<span style="left:${left.toFixed(1)}%;top:${top.toFixed(1)}%;rotate:${(rnd()*40-20).toFixed(0)}deg;animation-delay:-${(rnd()*7).toFixed(1)}s">${icons[i++%icons.length]}</span>`;}
+  $('#bgdeco').innerHTML=html;}
+/* ---------- Boot ---------- */
+paintBackground();
+renderSoundBtn();
+window.claude?.hot?.snapshot?.(()=>({state,history}));
+function start(data){if(data&&data.state){state=data.state;history=data.history||[];}render();}
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>
+
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+</body></html>
