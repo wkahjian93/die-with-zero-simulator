@@ -127,6 +127,7 @@ The app coaches players using the 9 rules from Bill Perkins' *Die With Zero* (�
 | Risk deck | 46 cards: **31 Nothing**, 8 Minor, 3 Critical, 3 Divorce, 1 Accident. Cards are drawn without replacement and the deck reshuffles when it runs out. |
 | Minor / Critical | Uninsured: −1 H / −4 H. Insured: no effect / −1 H and +6 M. |
 | **Accident Death** | Uninsured: the player dies. Insured with H above 3: H becomes 3, +20 M. Insured with H 3 or less: the player still dies, but gets +20 M. |
+| **Health 0 = death** | If H drops to 0 from ageing or from an illness card, the player dies and is out of the game. Their money passes to the children at 1 M = 1 LEP. If everyone is out, the game goes straight to final results. |
 | **Legacy** | Giving while alive (button): 1 M = **2 LEP**. When a player dies, all their M becomes LEP at **1 : 1**. At age 80, every survivor's leftover M also becomes inheritance at 1 : 1. |
 | Divorce / Breakup | −20 LEP. If the player does the dare and passes: +5 LEP instead. |
 | Players who die | They're out, but their LEP (including legacy) counts at the end. This can be switched off in setup. |
