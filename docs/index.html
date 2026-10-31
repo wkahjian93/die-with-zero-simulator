@@ -311,7 +311,7 @@ function cleanNames(raw){
     const k=s.toLowerCase();if(seen[k]){seen[k]++;s=s+' '+seen[k];}else seen[k]=1;return s;});}
 function newGame(names,settings){
   state={v:2,phase:'intro',round:0,cur:-1,settings,riskDeck:newRiskDeck(),dareDeck:shuffle(DARES.map((_,i)=>i)),pending:null,turn:null,risk:null,intro:[],divs:{},
-    players:names.map((n,i)=>({id:i,name:n,M:START.M,T:START.T,H:START.H,LEP:0,alive:true,insured:false,noIns:false,used:{},log:[],roundLEP:[0,0,0,0,0,0,0],exps:[],diedAge:null,div:0,given:0,inherit:0}))};
+    players:names.map((n,i)=>({id:i,name:n,M:START.M,T:START.T,H:START.H,LEP:0,alive:true,insured:false,used:{},log:[],roundLEP:[0,0,0,0,0,0,0],exps:[],diedAge:null,div:0,given:0,inherit:0}))};
   beginRound(0);}
 function beginRound(r){
   state.round=r;state.phase='intro';state.cur=-1;state.intro=[];const R=ROUNDS[r];
@@ -352,7 +352,7 @@ function check(a,p,arg){
     case'invest':return once('invest')||(p.M<1?'No money to invest':null);
     case'time':return(p.M<2?'Needs 2 M':null);
     case'heal':if(!canHeal(r))return'Only up to age 50';return(p.T<2?'Needs 2 T':(p.H>=START.H?'H is already at max '+START.H:null));
-    case'insure':if(!canInsure(r))return'Not available from age 70';if(p.noIns)return'Not insurable after an illness or accident';return once('insure')||(p.M<2?'Needs 2 M':null);
+    case'insure':if(!canInsure(r))return'Not available from age 70';return once('insure')||(p.M<2?'Needs 2 M':null);
     case'give':return once('give')||(p.M<1?'No money to give':null);}
   return null;}
 
@@ -510,8 +510,6 @@ function applyRisk(p,c){
       const m=p.M,n=die(p,'Died');L.push(`${pre}died at age ${age}. ${m} M passed to the children → +${n} LEP legacy`);}}
   else if(c==='divorce'){state.risk.wait=true;state.risk.dare=drawDare();}
   if((c==='minor'||c==='critical')&&p.H<=0){const m=p.M,n=die(p,'Health reached 0. Died');L.push(`Health reached 0: died at age ${age}. ${m} M passed to the children → +${n} LEP legacy`);}
-  // Any illness or accident makes the player uninsurable from next round.
-  if(p.alive&&(c==='minor'||c==='critical'||c==='accident')&&!p.noIns){p.noIns=true;L.push('Cannot buy insurance for the rest of the game');}
   if(c!=='divorce'&&c!=='accident')log(p,'Risk: '+RISK[c].name+' → '+L.join(', '));
   if(c==='accident'&&p.alive)log(p,'Risk: Accident Death → '+L.join(', '));}
 
@@ -563,7 +561,7 @@ function rulesHTML(){return`<details><summary>Quick rules</summary><ul class="sm
   <li>Experience LEP = base LEP × (1 + (H − Min H) × 0.2), rounded.</li>
   <li>Memory dividend: at the end of each round from 20 to 70, total LEP grows by 10% (snowball).</li>
   <li>Recover health (2 T → 1 H) up to age 50. Retirement income +${RETIRE_M} M at age 70.</li>
-  <li>Insurance (2 M) covers this round only. Not available from age 70, or after any illness or accident.</li>
+  <li>Insurance (2 M) covers this round only. Not available from age 70.</li>
   <li>If H reaches 0 (ageing or illness), the player dies and is out of the game.</li>
   <li>Give legacy while alive: 1 M = 2 LEP. Money left when you die or at 80: 1 M = 1 LEP.</li>
   <li>Only Dare Yourself is done physically. The group votes and the facilitator taps the result.</li></ul></details>`;}
@@ -609,7 +607,7 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   return`<div class="pbanner"><div style="min-width:0"><p class="eyebrow">Round ${r+1} · Age ${R.age}</p><h1>${esc(p.name)}</h1></div>
     ${state.settings.timer?`<button class="timer" id="timer" data-act="pause" aria-label="Pause or resume timer">--:--</button>`:`<span class="timer off">No timer</span>`}</div>
   ${tokens(p)}
-  <div class="row small">${p.insured?'<span class="tag ok">Insured this round</span>':p.noIns?'<span class="tag warn">Uninsurable</span>':'<span class="tag">Not insured</span>'}<span class="tag">Risk deck: ${state.riskDeck.length} cards</span>${p.div?`<span class="tag">Memory dividends so far: +${p.div}</span>`:''}</div>
+  <div class="row small">${p.insured?'<span class="tag ok">Insured this round</span>':'<span class="tag">Not insured</span>'}<span class="tag">Risk deck: ${state.riskDeck.length} cards</span>${p.div?`<span class="tag">Memory dividends so far: +${p.div}</span>`:''}</div>
   ${t.up?`<div class="banner">Time's up. Actions are locked. Draw the risk card.</div>`:''}
   ${pend}
   ${actionCard('Earn money','earn',canEarn(r)?'Option A or B':'Closed after age 60',`<div class="row">${btn('job','<span>Stable job</span><small>−3 T → +6 M</small>',p,null,'ghost stack')}${btn('career','<span>High-risk career</span><small>−2 T, dare → +18 M</small>',p,null,'ghost stack')}</div>`,p)}
@@ -619,7 +617,7 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   ${actionCard('Buy time','time','2 M → 2 T',`<div class="row">${btn('time','Buy 2 T',p)}</div>`,p)}
   ${actionCard('Recover health','heal',canHeal(r)?'2 T → 1 H':'Up to age 50',`<div class="row">${btn('heal','Gain 1 H',p)}</div>`,p)}
   </div>
-  ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +18 M. Accident: H becomes 3, +30 M (if H is 3 or less, still dies with +30 M legacy). After any illness or accident you can't buy insurance again.</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
+  ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +18 M. Accident: H becomes 3, +30 M (if H is 3 or less, still dies with +30 M legacy).</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
   ${actionCard('Give legacy to children','give','1 M = 2 LEP',giveBody,p)}
   ${p.log[r]&&p.log[r].length?`<section class="card"><h3>This round</h3><ol class="log">${p.log[r].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></section>`:''}`;}
 
@@ -671,7 +669,7 @@ function coachRound(p,r){
   if(p.H<=4&&canHeal(r))obs.push(`Health is down to ${p.H}. Every point of H adds 20% to each experience, so health multiplies everything.`);
   if(p.M>=8&&age>=40)obs.push(`You are holding ${p.M} M. Money you never use is life energy you worked for and never enjoyed (Rule 3).`);
   if(p.T>=2)obs.push(`You left ${p.T} T unused. Time can't be saved; it resets every decade (Rule 6).`);
-  if(!p.insured&&!p.noIns&&canInsure(r))obs.push('You played this decade uninsured. Protection lets you spend with confidence instead of hoarding for the worst case (Rule 4).');
+  if(!p.insured&&canInsure(r))obs.push('You played this decade uninsured. Protection lets you spend with confidence instead of hoarding for the worst case (Rule 4).');
   return{tag,title,lines:obs.slice(0,3),season:next?SEASON[next.age]:''};}
 function coachHTML(r){
   const alive=state.players.filter(p=>p.alive);if(!alive.length)return'';
