@@ -26,7 +26,7 @@
 1. **Setup:** choose 1–5 players, type names, and keep the 4-minute timer on. Tap **Start game at age 20**.
 2. **Round screen:** the app refreshes everyone's T, applies the ageing H drop, and adds retirement income at age 70. Read it out, then tap **Start [name]'s turn**.
 3. **Player's turn:** the timer starts automatically. Tap it to pause. Experiences, Buy time and Recover health can be used as many times as M, T and H allow; the other actions once per round:
-   - **Earn money** (rounds 1–5): Stable job −3 T → +6 M, or High-risk career −2 T. For the career option, the app shows a dare, the player performs it, and you tap **PASS (+12 M)** or **FAIL (+0 M)** after the group vote.
+   - **Earn money** (rounds 1–5): Stable job −3 T → +6 M, or High-risk career −2 T. For the career option, the app shows a dare, the player performs it, and you tap **PASS (+18 M)** or **FAIL (+0 M)** after the group vote.
    - **Buy a life experience:** each card shows the exact LEP the player would get at their current H.
    - **Invest money:** pick the amount, then **Roll dice in app**, or roll real dice and pick the total.
    - **Buy time** (2 M → 2 T), **Recover health** (2 T → 1 H, up to age 50), **Buy insurance** (2 M).
@@ -115,7 +115,7 @@ The app coaches players using the 9 rules from Bill Perkins' *Die With Zero* (�
 | --- | --- |
 | Start | M 0, T 10, H 10. Each round is one decade, from age 20 to 80. |
 | T refresh / ageing | T: 10, 8, 6, 8, 10, 10, 10. H drop: 0, 1, 1, 2, 2, 2, 1, applied at the start of each round. H stops at 0. |
-| Earn money | Rounds 1–5 only. Option A: −3 T → +6 M. Option B: −2 T + dare → PASS +12 M / FAIL +0 M. |
+| Earn money | Rounds 1–5 only. Option A: −3 T → +6 M. Option B: −2 T + dare → PASS +18 M / FAIL +0 M. |
 | Experiences | **Any number per round**, including the same card again, as long as the player has the M, T and H (H ≥ Min H). LEP = base × (1 + (H − Min H) × 0.2), rounded: every 1 H above Min H adds 20%. Example: Bungee (8 LEP, Min H 8) at H 10 = 8 × 1.4 = 11. |
 | **Memory dividend (snowball)** | At the end of rounds 1–6 (ages 20–70), each living player's **total** LEP grows by 10%, rounded. Example: 19 → +2 → 21. Not paid after the final round at 80, and not paid on zero or negative LEP. |
 | Invest | 2–5: lose the stake. 6–8: stake back. 9–10: get back 2×. 11–12: get back 3×. |
@@ -139,7 +139,7 @@ Five players, with the risk cards set in advance so every new rule could be chec
 | Player | What happened | App result | Hand check |
 | --- | --- | --- | --- |
 | Ali, age 20 | Job, Bungee, gave all 4 M | LEP 11 + 8 = 19, then memory +2 → **21** | 4 M × 2 = 8; 19 × 10% = 1.9 → 2 ✓ |
-| Mei Ling, 20 | Career PASS (+12 M), insured, Europe, then Critical Illness | M 12, H 9, **LEP 26**, uninsurable | 24 + 2.4 → 26 ✓ |
+| Mei Ling, 20 | Career PASS (+18 M), insured, Europe, then Critical Illness | M 30, H 9, **LEP 26**, uninsurable | 24 + 2.4 → 26 ✓ |
 | Kumar, 20 | Job, invested 2 M (rolled 11), Japan, Minor Illness | M 4, H 9, **LEP 22**, uninsurable | ✓ |
 | Siti, 20 | Career FAIL, Divorce with dare passed | LEP 5 + 1 → **6** | ✓ |
 | Jason, 20 | Job (+6 M), uninsured Accident | Died; 6 M → **+6 LEP** | ✓ |

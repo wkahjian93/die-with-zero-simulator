@@ -457,7 +457,7 @@ const ACTIONS={
   beginTurns(){commit(()=>nextTurn());},
   job(){const p=P();commit(()=>{p.T-=3;p.M+=6;p.used.earn=true;log(p,'Stable job: −3 T, +6 M');});SFX.play('cash',.05);burst('money','+6 M');},
   career(){drawAnimation('dare',()=>commit(()=>{state.pending={k:'career',dare:drawDare()};}));},
-  careerVote(res){const p=P();commit(()=>{p.T-=2;p.used.earn=true;p.risks=(p.risks||0)+1;p.riskThisRound=true;if(res==='pass'){p.M+=12;log(p,'High-risk career PASSED: −2 T, +12 M');}else log(p,'High-risk career FAILED: −2 T, +0 M');state.pending=null;});SFX.play(res==='pass'?'cash':'cry',.05);res==='pass'?burst('money','+12 M'):burst('sad','FAIL · +0 M');},
+  careerVote(res){const p=P();commit(()=>{p.T-=2;p.used.earn=true;p.risks=(p.risks||0)+1;p.riskThisRound=true;if(res==='pass'){p.M+=18;log(p,'High-risk career PASSED: −2 T, +18 M');}else log(p,'High-risk career FAILED: −2 T, +0 M');state.pending=null;});SFX.play(res==='pass'?'cash':'cry',.05);res==='pass'?burst('money','+18 M'):burst('sad','FAIL · +0 M');},
   giveAmt(d){const p=P();ui.giveAmt=Math.min(p.M,Math.max(1,(ui.giveAmt||1)+(+d)));render();},
   giveAll(){ui.giveAmt=P().M;render();},
   give(){const p=P(),a=Math.min(ui.giveAmt||1,p.M);if(a<1)return;const g=a*GIVE_RATE;
@@ -559,7 +559,7 @@ function rulesHTML(){return`<details><summary>Quick rules</summary><ul class="sm
   <li>Start: M 0, T 10, H 10. Each round is one decade, from age 20 to 80.</li>
   <li>Each round T refreshes (10, 8, 6, 8, 10, 10, 10) and H drops with age (0, 1, 1, 2, 2, 2, 1). The app does this automatically.</li>
   <li>In any order: buy experiences, buy time and recover health as many times as your M, T and H allow. Earn money, invest, insurance and give legacy once per round.</li>
-  <li>Stable job: −3 T, +6 M. High-risk career: −2 T, dare, PASS +12 M. Only in rounds 1–5.</li>
+  <li>Stable job: −3 T, +6 M. High-risk career: −2 T, dare, PASS +18 M. Only in rounds 1–5.</li>
   <li>Experience LEP = base LEP × (1 + (H − Min H) × 0.2), rounded.</li>
   <li>Memory dividend: at the end of each round from 20 to 70, total LEP grows by 10% (snowball).</li>
   <li>Recover health (2 T → 1 H) up to age 50. Retirement income +20 M at age 70.</li>
@@ -587,7 +587,7 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   if(state.pending&&state.pending.k==='career'){pend=`<section class="card"><p class="eyebrow">High-risk career · Dare Yourself</p>
     <div class="bigcard dare flip"><p class="eyebrow">Dare Yourself</p><h2>${esc(DARES[state.pending.dare])}</h2></div>
     <p class="small muted">${esc(p.name)} performs the dare now. The group votes. At least 50% PASS wins.</p>
-    <div class="row"><button class="btn good" data-act="careerVote" data-arg="pass">PASS · −2 T, +12 M</button><button class="btn bad" data-act="careerVote" data-arg="fail">FAIL · −2 T, +0 M</button></div>
+    <div class="row"><button class="btn good" data-act="careerVote" data-arg="pass">PASS · −2 T, +18 M</button><button class="btn bad" data-act="careerVote" data-arg="fail">FAIL · −2 T, +0 M</button></div>
     <button class="btn ghost" data-act="careerCancel">Cancel, no cost</button></section>`;}
   const li=p.lastInvest&&p.used.invest?p.lastInvest:null;
   const dice=d=>{const pips={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[d];return`<div class="die${ui.rolling?' roll':''}">${[...Array(9)].map((_,i)=>`<span class="${pips.includes(i)?'on':''}"></span>`).join('')}</div>`;};
@@ -612,7 +612,7 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   <div class="row small">${p.insured?'<span class="tag ok">Insured this round</span>':p.noIns?'<span class="tag warn">Uninsurable</span>':'<span class="tag">Not insured</span>'}<span class="tag">Risk deck: ${state.riskDeck.length} cards</span>${p.div?`<span class="tag">Memory dividends so far: +${p.div}</span>`:''}</div>
   ${t.up?`<div class="banner">Time's up. Actions are locked. Draw the risk card.</div>`:''}
   ${pend}
-  ${actionCard('Earn money','earn',canEarn(r)?'Option A or B':'Closed after age 60',`<div class="row">${btn('job','<span>Stable job</span><small>−3 T → +6 M</small>',p,null,'ghost stack')}${btn('career','<span>High-risk career</span><small>−2 T, dare → +12 M</small>',p,null,'ghost stack')}</div>`,p)}
+  ${actionCard('Earn money','earn',canEarn(r)?'Option A or B':'Closed after age 60',`<div class="row">${btn('job','<span>Stable job</span><small>−3 T → +6 M</small>',p,null,'ghost stack')}${btn('career','<span>High-risk career</span><small>−2 T, dare → +18 M</small>',p,null,'ghost stack')}</div>`,p)}
   ${actionCard('Buy a life experience','exp','LEP cards',expBody,p)}
   ${actionCard('Invest money','invest','Once per round',investBody,p)}
   <div class="row" style="align-items:stretch">
