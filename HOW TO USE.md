@@ -121,7 +121,7 @@ The app coaches players using the 9 rules from Bill Perkins' *Die With Zero* (�
 | Invest | 2–5: lose the stake. 6–8: stake back. 9–10: get back 2×. 11–12: get back 3×. |
 | Recover health | 2 T → 1 H, **any number of times per round**, up to age **50** (closed from 60). H can't go above 10. |
 | Buy time | 2 M → 2 T, **any number of times per round**. |
-| **Retirement income** | +20 M to every living player at the start of the age-70 round (once). |
+| **Retirement income** | +30 M to every living player at the start of the age-70 round (once). |
 | Insurance | 2 M, covers that round only. **Not available at ages 70 and 80.** |
 | **Uninsurable after a claim** | After drawing Minor Illness, Critical Illness or Accident Death (insured or not), the player can't buy insurance for the rest of the game. |
 | Risk deck | 46 cards: **31 Nothing**, 8 Minor, 3 Critical, 3 Divorce, 1 Accident. Cards are drawn without replacement and the deck reshuffles when it runs out. |
@@ -151,7 +151,7 @@ The app also checked these:
 - **Health recovery:** open at ages 40 and 50, closed at 60.
 - **Earning money:** closed at 70.
 - **Insurance:** closed at 70 and 80.
-- **Retirement income:** +20 M arrived at age 70.
+- **Retirement income:** +30 M arrived at age 70.
 - **Final scoring:** at age 80, every survivor's leftover money became LEP 1:1. Every player's final total matched the sum of their per-round LEP.
 
 **One balance point to watch:** the test players were bots that never recovered health, and they reached H 0 by around 60 with lots of money left over. Their money ended up as inheritance at only 1 LEP per M. In real games, the Give legacy button (2 LEP per M) will be the key late-game decision, which makes a good debrief point.

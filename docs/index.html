@@ -274,7 +274,7 @@ const RISK={
   divorce:{name:'Divorce / Breakup',desc:'Emotional damage',impact:'−20 LEP',ins:'Dare yourself: −20 LEP becomes +5 LEP',n:3},
   accident:{name:'Accident Death',desc:'Game over',impact:'Player dies. Money left becomes legacy LEP (1 M = 1 LEP)',ins:'H becomes 3, +30 M. If H was 3 or less, still dies, but +30 M legacy',n:1}};
 // Money-to-LEP rates: giving while alive is worth double an inheritance.
-const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=20;
+const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=30;
 const DARES=['Do a fake commercial selling a pen / bottle / chair.','Act like a very confident model walking a runway.','Do your best evil laugh.','Walk like a duck and sing.','Stick out your tongue and spin around 10 times while combing your hair.','Do 10 jumping jacks and shout a motivational phrase.','Laugh for 20 seconds non-stop (fake allowed).','Act like you just won a million ringgit lottery.','Do 20 push-ups or 40 squats.','Open the window and shout "I am pretty / handsome" 3 times.','Spin yourself around 10 times.','Place both hands on the wall, stick your butt out, and sing the entire song "Two Tigers".','Walk like a zombie who is very happy.','Cross your left elbow over your right elbow, pinch your nose with your right hand, and sing the Elephant Song.','Use an object as a pole and do a pole dance.','Jump like a frog while clucking like a chicken at the same time.','Use your butt to write your surname on the floor.','Sit-ups × 20.','Star jumps × 10.','Plank for 30 seconds.','Introduce yourself in 3 sentences using a baby voice.','Wear socks on both hands, clap them together, and make sounds like a sea lion.','Use your baby voice to sing "Twinkle, Twinkle, Little Star".','Do your best catwalk, but walk like a gorilla.','Act like a T-Rex roaring and searching for food.'];
 const EXAMPLE_NAMES=['Ali','Mei Ling','Kumar','Siti','Jason'];
 const KEY='dwz-sim-v2';
@@ -481,7 +481,7 @@ const ACTIONS={
   divorce(res){const p=P();commit(()=>{const L=state.risk.lines;if(res==='pass'){addLEP(p,5);L.push('Dare passed: +5 LEP instead of −20');log(p,'Divorce / Breakup: dare passed, +5 LEP');SFX.play('happy',.05);burst('happy','+5 LEP');}
     else{addLEP(p,-20);L.push('−20 LEP');log(p,'Divorce / Breakup: −20 LEP');SFX.play('cry',.05);burst('sad','−20 LEP');}state.risk.wait=false;});},
   next(){commit(()=>nextTurn());if(state.phase==='roundEnd'){SFX.play('ting',.05);if(Object.values(state.divs).some(v=>v>0))burst('happy','Memory dividend +10%',300);}},
-  nextRound(){commit(()=>{if(state.round>=6||!state.players.some(p=>p.alive))finalize();else beginRound(state.round+1);});if(state.phase==='final'){SFX.play('fanfare',.05);burst('happy','Age 80 · Final scoring');}else if(ROUNDS[state.round].age===70){SFX.play('cash',.05);burst('money','Retirement +20 M');}},
+  nextRound(){commit(()=>{if(state.round>=6||!state.players.some(p=>p.alive))finalize();else beginRound(state.round+1);});if(state.phase==='final'){SFX.play('fanfare',.05);burst('happy','Age 80 · Final scoring');}else if(ROUNDS[state.round].age===70){SFX.play('cash',.05);burst('money','Retirement +'+RETIRE_M+' M');}},
   finish(){confirmBox('End the game now and show final results? Money still held is scored as inheritance (1 M = 1 LEP).','Show results',()=>{commit(()=>{finalize();});closeLayer();});},
   table(){openTable();},
   soundAll(){const on=SFX.all();renderSoundBtn();toast(on?'Sound and music on':'All sound off');if(on)SFX.play('click');},
@@ -562,7 +562,7 @@ function rulesHTML(){return`<details><summary>Quick rules</summary><ul class="sm
   <li>Stable job: −3 T, +6 M. High-risk career: −2 T, dare, PASS +18 M. Only in rounds 1–5.</li>
   <li>Experience LEP = base LEP × (1 + (H − Min H) × 0.2), rounded.</li>
   <li>Memory dividend: at the end of each round from 20 to 70, total LEP grows by 10% (snowball).</li>
-  <li>Recover health (2 T → 1 H) up to age 50. Retirement income +20 M at age 70.</li>
+  <li>Recover health (2 T → 1 H) up to age 50. Retirement income +${RETIRE_M} M at age 70.</li>
   <li>Insurance (2 M) covers this round only. Not available from age 70, or after any illness or accident.</li>
   <li>If H reaches 0 (ageing or illness), the player dies and is out of the game.</li>
   <li>Give legacy while alive: 1 M = 2 LEP. Money left when you die or at 80: 1 M = 1 LEP.</li>
