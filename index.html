@@ -256,9 +256,9 @@ const EXPS=[
 const RISK={
   nothing:{name:'Nothing',desc:'Lucky round',impact:'No effect',n:31},
   minor:{name:'Minor Illness',desc:'Small H drop',impact:'−1 H',ins:'No effect',n:8},
-  critical:{name:'Critical Illness',desc:'Major H drop',impact:'−4 H',ins:'−1 H only, +6 M',n:3},
+  critical:{name:'Critical Illness',desc:'Major H drop',impact:'−4 H',ins:'−1 H only, +18 M',n:3},
   divorce:{name:'Divorce / Breakup',desc:'Emotional damage',impact:'−20 LEP',ins:'Dare yourself: −20 LEP becomes +5 LEP',n:3},
-  accident:{name:'Accident Death',desc:'Game over',impact:'Player dies. Money left becomes legacy LEP (1 M = 1 LEP)',ins:'H becomes 3, +20 M. If H was 3 or less, still dies, but +20 M legacy',n:1}};
+  accident:{name:'Accident Death',desc:'Game over',impact:'Player dies. Money left becomes legacy LEP (1 M = 1 LEP)',ins:'H becomes 2, +30 M. If H was 2 or less, still dies, but +30 M legacy',n:1}};
 // Money-to-LEP rates: giving while alive is worth double an inheritance.
 const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=20;
 const DARES=['Do a fake commercial selling a pen / bottle / chair.','Act like a very confident model walking a runway.','Do your best evil laugh.','Walk like a duck and sing.','Stick out your tongue and spin around 10 times while combing your hair.','Do 10 jumping jacks and shout a motivational phrase.','Laugh for 20 seconds non-stop (fake allowed).','Act like you just won a million ringgit lottery.','Do 20 push-ups or 40 squats.','Open the window and shout "I am pretty / handsome" 3 times.','Spin yourself around 10 times.','Place both hands on the wall, stick your butt out, and sing the entire song "Two Tigers".','Walk like a zombie who is very happy.','Cross your left elbow over your right elbow, pinch your nose with your right hand, and sing the Elephant Song.','Use an object as a pole and do a pole dance.','Jump like a frog while clucking like a chicken at the same time.','Use your butt to write your surname on the floor.','Sit-ups × 20.','Star jumps × 10.','Plank for 30 seconds.','Introduce yourself in 3 sentences using a baby voice.','Wear socks on both hands, clap them together, and make sounds like a sea lion.','Use your baby voice to sing "Twinkle, Twinkle, Little Star".','Do your best catwalk, but walk like a gorilla.','Act like a T-Rex roaring and searching for food.'];
@@ -483,16 +483,16 @@ function reactRisk(p,c,wasIns){
   if(c==='nothing'){SFX.play('lucky',.05);burst('lucky','Lucky round');return;}
   if(c==='divorce'){SFX.play('sad',.05);burst('heart','−20 LEP');return;}
   if(wasIns&&p.alive){SFX.play('shield',.05);burst('shield','Insurance protected you');
-    const pay=c==='critical'?6:c==='accident'?20:0;if(pay){SFX.play('cash',1);burst('money',`+${pay} M`,1000);}return;}
+    const pay=c==='critical'?18:c==='accident'?30:0;if(pay){SFX.play('cash',1);burst('money',`+${pay} M`,1000);}return;}
   SFX.play('sad',.05);burst('sad',!p.alive?(p.H<=0?'H 0 · Died at ':'Died at ')+p.diedAge:c==='minor'?'−1 H':'−4 H');}
 function applyRisk(p,c){
   const L=state.risk.lines,ins=p.insured,age=ROUNDS[state.round].age;
   if(c==='nothing'){L.push('No effect');}
   else if(c==='minor'){if(ins)L.push('Insured: no effect');else{p.H=Math.max(0,p.H-1);L.push('−1 H');}}
-  else if(c==='critical'){if(ins){p.H=Math.max(0,p.H-1);p.M+=6;L.push('Insured: −1 H, +6 M');}else{p.H=Math.max(0,p.H-4);L.push('−4 H');}}
+  else if(c==='critical'){if(ins){p.H=Math.max(0,p.H-1);p.M+=18;L.push('Insured: −1 H, +18 M');}else{p.H=Math.max(0,p.H-4);L.push('−4 H');}}
   else if(c==='accident'){
-    if(ins&&p.H>3){p.H=3;p.M+=20;L.push('Insured: H becomes 3, +20 M');}
-    else{let pre='';if(ins){p.M+=20;pre='Insured, but H was '+p.H+' (3 or less): +20 M, ';}
+    if(ins&&p.H>2){p.H=2;p.M+=30;L.push('Insured: H becomes 2, +30 M');}
+    else{let pre='';if(ins){p.M+=30;pre='Insured, but H was '+p.H+' (2 or less): +30 M, ';}
       const m=p.M,n=die(p,'Died');L.push(`${pre}died at age ${age}. ${m} M passed to the children → +${n} LEP legacy`);}}
   else if(c==='divorce'){state.risk.wait=true;state.risk.dare=drawDare();}
   if((c==='minor'||c==='critical')&&p.H<=0){const m=p.M,n=die(p,'Health reached 0. Died');L.push(`Health reached 0: died at age ${age}. ${m} M passed to the children → +${n} LEP legacy`);}
@@ -605,7 +605,7 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   ${actionCard('Buy time','time','2 M → 2 T',`<div class="row">${btn('time','Buy 2 T',p)}</div>`,p)}
   ${actionCard('Recover health','heal',canHeal(r)?'2 T → 1 H':'Up to age 50',`<div class="row">${btn('heal','Gain 1 H',p)}</div>`,p)}
   </div>
-  ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +6 M. Accident: H becomes 3, +20 M (if H is 3 or less, still dies with +20 M legacy). After any illness or accident you can't buy insurance again.</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
+  ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +18 M. Accident: H becomes 2, +30 M (if H is 2 or less, still dies with +30 M legacy). After any illness or accident you can't buy insurance again.</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
   ${actionCard('Give legacy to children','give','1 M = 2 LEP',giveBody,p)}
   ${p.log[r]&&p.log[r].length?`<section class="card"><h3>This round</h3><ol class="log">${p.log[r].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></section>`:''}`;}
 
