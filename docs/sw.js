@@ -1,5 +1,5 @@
 // Offline support: keep the game files on the phone so it opens without internet.
-const CACHE = 'dwz-f66aee7e6d';
+const CACHE = 'dwz-8763b0866d';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

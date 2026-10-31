@@ -126,7 +126,7 @@ The app coaches players using the 9 rules from Bill Perkins' *Die With Zero* (�
 | **Uninsurable after a claim** | After drawing Minor Illness, Critical Illness or Accident Death (insured or not), the player can't buy insurance for the rest of the game. |
 | Risk deck | 46 cards: **31 Nothing**, 8 Minor, 3 Critical, 3 Divorce, 1 Accident. Cards are drawn without replacement and the deck reshuffles when it runs out. |
 | Minor / Critical | Uninsured: −1 H / −4 H. Insured: no effect / −1 H and +18 M. |
-| **Accident Death** | Uninsured: the player dies. Insured with H above 2: H becomes 2, +30 M. Insured with H 2 or less: the player still dies, but gets +30 M. |
+| **Accident Death** | Uninsured: the player dies. Insured with H above 3: H becomes 3, +30 M. Insured with H 3 or less: the player still dies, but gets +30 M. |
 | **Health 0 = death** | If H drops to 0 from ageing or from an illness card, the player dies and is out of the game. Their money passes to the children at 1 M = 1 LEP. If everyone is out, the game goes straight to final results. |
 | **Legacy** | Giving while alive (button): 1 M = **2 LEP**. When a player dies, all their M becomes LEP at **1 : 1**. At age 80, every survivor's leftover M also becomes inheritance at 1 : 1. |
 | Divorce / Breakup | −20 LEP. If the player does the dare and passes: +5 LEP instead. |
@@ -143,7 +143,7 @@ Five players, with the risk cards set in advance so every new rule could be chec
 | Kumar, 20 | Job, invested 2 M (rolled 11), Japan, Minor Illness | M 4, H 9, **LEP 22**, uninsurable | ✓ |
 | Siti, 20 | Career FAIL, Divorce with dare passed | LEP 5 + 1 → **6** | ✓ |
 | Jason, 20 | Job (+6 M), uninsured Accident | Died; 6 M → **+6 LEP** | ✓ |
-| Ali, 30 | Insured, Accident with H 9 | H → **2**, +30 M → M 34 | ✓ |
+| Ali, 30 | Insured, Accident with H 9 | H → **3**, +30 M → M 34 | ✓ |
 | Mei Ling, 30 | Tried to buy insurance | **Blocked** (uninsurable) | ✓ |
 | Siti, 30 | H 3, insured, Accident | Died; 4 + 20 = 24 M → **LEP 30** | ✓ |
 
