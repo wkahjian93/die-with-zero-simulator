@@ -26,13 +26,10 @@ const head = `<!doctype html>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head><body>
 `;
-// Access lock: on when app/gate-config.json has the Google web app URL (or GATE_URL is set for testing).
-const gateUrl = process.env.GATE_URL || JSON.parse(fs.readFileSync(path.join(app, 'gate-config.json'), 'utf8')).url;
-const gate = gateUrl ? `\n<script>\n${fs.readFileSync(path.join(app, 'gate.js'), 'utf8').replace('__GATE_URL__', gateUrl)}</script>` : '';
 // Workshop rooms: on when app/rooms-config.json has the server address (or ROOMS_API is set for testing).
 const roomsApi = process.env.ROOMS_API || JSON.parse(fs.readFileSync(path.join(app, 'rooms-config.json'), 'utf8')).api;
 const rooms = roomsApi ? `\n<script>\n${fs.readFileSync(path.join(app, 'rooms.js'), 'utf8').replace('__ROOMS_API__', roomsApi)}</script>` : '';
-const tail = `${rooms || gate}
+const tail = `${rooms}
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body></html>
 `;
@@ -58,4 +55,4 @@ if (!fs.existsSync(icon512) || fs.statSync(iconSrc).mtimeMs > fs.statSync(icon51
       `--window-size=512,512`, `--screenshot=${path.join(out, 'icons', name)}`, url], { stdio: 'ignore' });
   }
 }
-console.log('Built docs/ (version ' + version + ', access lock ' + (gateUrl ? 'ON' : 'off') + ', rooms ' + (roomsApi ? 'ON' : 'off') + ')');
+console.log('Built docs/ (version ' + version + ', rooms ' + (roomsApi ? 'ON' : 'off') + ')');
