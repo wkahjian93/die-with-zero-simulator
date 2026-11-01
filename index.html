@@ -418,6 +418,9 @@ const SFX=(()=>{
   function musicOff(){if(timer){clearInterval(timer);timer=null;}}
   document.addEventListener('visibilitychange',()=>{if(!ctx)return;document.hidden?ctx.suspend().catch(()=>{}):ctx.resume().catch(()=>{});});
   return{play,playLong,prefs,unlock(){if(ensure())musicOn();},quiet(on){on?musicOff():musicOn();},
+    running(){return!!ctx&&ctx.state==='running';},
+    // Workshop rooms: move the music to a shared position (ms) so phones in a room play the same bar.
+    align(ms){if(!ctx||!timer)return;const s=Math.ceil(ms/250)+2,at=ctx.currentTime+(s*250-ms)/1000;if(Math.abs(at-(next+(s-step)*.25))>.04){next=at;step=s;}},
     toggle(k){prefs[k]=!prefs[k];savePrefs();if(k==='music')prefs.music?musicOn():musicOff();},
     all(){const on=!(prefs.sfx||prefs.music);prefs.sfx=on;prefs.music=on;savePrefs();on?musicOn():musicOff();return on;}};
 })();

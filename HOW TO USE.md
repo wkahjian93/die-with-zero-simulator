@@ -9,6 +9,18 @@
 - **Backup link (Claude):** https://claude.ai/artifact/4D2DqCmHDHhv7gPawzePLY (currently shared as "anyone with the link"; change this in the page's Share menu).
 - Use **one facilitator phone** for the whole table. The game saves after every tap, so if the phone locks or the page closes, reopen it and tap **Continue game**.
 
+## Workshop rooms
+
+The link now opens the workshop, not a free game. Students can only play while you have a workshop open and you have approved their room.
+
+1. Open your Owner Dashboard, log in with the email code and tap **Open Workshop**.
+2. Students scan the QR code, enter a name, and create or join a room.
+3. The Room Leader accepts players and sends the room to you. Tap **Approve Room**.
+4. Every player plays on their own phone. Only the phone whose turn it is can press the buttons.
+5. Tap **End Workshop** when you finish.
+
+Your Owner Dashboard address is in your private setup notes. Don't share it with students.
+
 ## Install it on a phone or tablet
 
 | Device | Steps |

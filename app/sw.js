@@ -15,7 +15,8 @@ self.addEventListener('activate', e => {
 // Network first for the game page (gets updates), cache first for everything else (fonts, icons).
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;
+  // Room server calls must always be live, never a saved copy.
+  if (req.method !== 'GET' || new URL(req.url).pathname.startsWith('/api/')) return;
   const isPage = req.mode === 'navigate';
   e.respondWith(isPage
     ? fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); return res; })
