@@ -25,7 +25,7 @@
 
 1. **Setup:** choose 1–5 players, type names, and keep the 4-minute timer on. Tap **Start game at age 20**.
 2. **Round screen:** the app refreshes everyone's T, applies the ageing H drop, and adds retirement income at age 70. Read it out, then tap **Start [name]'s turn**.
-3. **Player's turn:** the timer starts automatically. Tap it to pause. Experiences, Buy time and Recover health can be used as many times as M, T and H allow; the other actions once per round:
+3. **Player's turn:** the timer starts automatically. Tap it to pause. Experiences can be bought as many times as M, T and H allow, Buy time up to 3 times per round, and Recover health up to 2 times per round. The other actions are once per round:
    - **Earn money** (rounds 1–5): Stable job −3 T → +6 M, or High-risk career −2 T. For the career option, the app shows a dare, the player performs it, and you tap **PASS (+18 M)** or **FAIL (+0 M)** after the group vote.
    - **Buy a life experience:** each card shows the exact LEP the player would get at their current H.
    - **Invest money:** pick the amount, then **Roll dice in app**, or roll real dice and pick the total.
@@ -119,8 +119,8 @@ The app coaches players using the 9 rules from Bill Perkins' *Die With Zero* (�
 | Experiences | **Any number per round**, including the same card again, as long as the player has the M, T and H (H ≥ Min H). LEP = base × (1 + (H − Min H) × 0.2), rounded: every 1 H above Min H adds 20%. Example: Bungee (8 LEP, Min H 8) at H 10 = 8 × 1.4 = 11. |
 | **Memory dividend (snowball)** | At the end of rounds 1–6 (ages 20–70), each living player's **total** LEP grows by 10%, rounded. Example: 19 → +2 → 21. Not paid after the final round at 80, and not paid on zero or negative LEP. |
 | Invest | 2–5: lose the stake. 6–8: stake back. 9–10: get back 2×. 11–12: get back 3×. |
-| Recover health | 2 T → 1 H, **any number of times per round**, up to age **50** (closed from 60). H can't go above 10. |
-| Buy time | 2 M → 2 T, **any number of times per round**. |
+| Recover health | 2 T → 1 H, **up to 2 times per round**, up to age **50** (closed from 60). H can't go above 10. |
+| Buy time | 2 M → 2 T, **up to 3 times per round**. |
 | **Retirement income** | +30 M to every living player at the start of the age-70 round (once). |
 | Insurance | 2 M, covers that round only. **Not available at ages 70 and 80.** |
 | Risk deck | 46 cards: **31 Nothing**, 8 Minor, 3 Critical, 3 Divorce, 1 Accident. Cards are drawn without replacement and the deck reshuffles when it runs out. |

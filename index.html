@@ -260,7 +260,7 @@ const RISK={
   divorce:{name:'Divorce / Breakup',desc:'Emotional damage',impact:'−20 LEP',ins:'Dare yourself: −20 LEP becomes +5 LEP',n:3},
   accident:{name:'Accident Death',desc:'Game over',impact:'Player dies. Money left becomes legacy LEP (1 M = 1 LEP)',ins:'H becomes 3, +30 M. If H was 3 or less, still dies, but +30 M legacy',n:1}};
 // Money-to-LEP rates: giving while alive is worth double an inheritance.
-const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=30;
+const GIVE_RATE=2, INHERIT_RATE=1, MEMORY_RATE=0.1, RETIRE_M=30, MAX_TIME=3, MAX_HEAL=2;
 const DARES=['Do a fake commercial selling a pen / bottle / chair.','Act like a very confident model walking a runway.','Do your best evil laugh.','Walk like a duck and sing.','Stick out your tongue and spin around 10 times while combing your hair.','Do 10 jumping jacks and shout a motivational phrase.','Laugh for 20 seconds non-stop (fake allowed).','Act like you just won a million ringgit lottery.','Do 20 push-ups or 40 squats.','Open the window and shout "I am pretty / handsome" 3 times.','Spin yourself around 10 times.','Place both hands on the wall, stick your butt out, and sing the entire song "Two Tigers".','Walk like a zombie who is very happy.','Cross your left elbow over your right elbow, pinch your nose with your right hand, and sing the Elephant Song.','Use an object as a pole and do a pole dance.','Jump like a frog while clucking like a chicken at the same time.','Use your butt to write your surname on the floor.','Sit-ups × 20.','Star jumps × 10.','Plank for 30 seconds.','Introduce yourself in 3 sentences using a baby voice.','Wear socks on both hands, clap them together, and make sounds like a sea lion.','Use your baby voice to sing "Twinkle, Twinkle, Little Star".','Do your best catwalk, but walk like a gorilla.','Act like a T-Rex roaring and searching for food.'];
 const EXAMPLE_NAMES=['Ali','Mei Ling','Kumar','Siti','Jason'];
 const KEY='dwz-sim-v2';
@@ -336,8 +336,8 @@ function check(a,p,arg){
     case'exp':{const e=EXPS.find(x=>x.id===arg);
       if(p.H<e.h)return'Needs H '+e.h;if(p.M<e.m)return'Needs '+e.m+' M';if(p.T<e.t)return'Needs '+e.t+' T';return null;}
     case'invest':return once('invest')||(p.M<1?'No money to invest':null);
-    case'time':return(p.M<2?'Needs 2 M':null);
-    case'heal':if(!canHeal(r))return'Only up to age 50';return(p.T<2?'Needs 2 T':(p.H>=START.H?'H is already at max '+START.H:null));
+    case'time':return once('time')||(p.M<2?'Needs 2 M':null);
+    case'heal':if(!canHeal(r))return'Only up to age 50';return once('heal')||(p.T<2?'Needs 2 T':(p.H>=START.H?'H is already at max '+START.H:null));
     case'insure':if(!canInsure(r))return'Not available from age 70';return once('insure')||(p.M<2?'Needs 2 M':null);
     case'give':return once('give')||(p.M<1?'No money to give':null);}
   return null;}
@@ -457,8 +457,8 @@ const ACTIONS={
     const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6);ui.rolling=null;rollAnimation(d1,d2,()=>doInvest(a,d1+d2,[d1,d2]));},
   manualRoll(){const v=parseInt($('#manualDice').value,10);if(!(v>=2&&v<=12)){toast('Pick the dice total first (2–12)');return;}
     const p=P(),a=Math.min(ui.investAmt||1,p.M);ui.rolling=null;doInvest(a,v,null);},
-  time(){const p=P();commit(()=>{p.M-=2;p.T+=2;log(p,'Bought time: −2 M, +2 T');});SFX.play('rewind',.05);burst('time','+2 T');},
-  heal(){const p=P();commit(()=>{p.T-=2;p.H+=1;log(p,'Recovered health: −2 T, +1 H');});SFX.play('power',.05);burst('health','+1 H');},
+  time(){const p=P();commit(()=>{p.M-=2;p.T+=2;useUp(p,'time',MAX_TIME);log(p,'Bought time: −2 M, +2 T');});SFX.play('rewind',.05);burst('time','+2 T');},
+  heal(){const p=P();commit(()=>{p.T-=2;p.H+=1;useUp(p,'heal',MAX_HEAL);log(p,'Recovered health: −2 T, +1 H');});SFX.play('power',.05);burst('health','+1 H');},
   insure(){const p=P();commit(()=>{p.M-=2;p.insured=true;p.used.insure=true;log(p,'Bought insurance: −2 M (covered this round)');});SFX.play('shield',.05);burst('shield','Insured');},
   pause(){commit(()=>{const t=state.turn;if(t.deadline){t.paused=Math.max(0,t.deadline-Date.now());t.deadline=null;}else if(t.paused!=null){t.deadline=Date.now()+t.paused;t.paused=null;}});},
   endTurn(){commit(()=>{state.phase='risk';state.pending=null;state.risk={card:null};});},
@@ -474,6 +474,9 @@ const ACTIONS={
   sfx(){SFX.toggle('sfx');renderSoundBtn();openMenu();},
   music(){SFX.toggle('music');renderSoundBtn();openMenu();},
 };
+// Actions with a per-round limit: count the uses, then mark the action done at the limit.
+function useUp(p,k,max){p.used[k+'N']=(p.used[k+'N']||0)+1;if(p.used[k+'N']>=max)p.used[k]=true;}
+const usesLeft=(p,k,max)=>` · ${max-(p.used[k+'N']||0)} left`;
 function doInvest(a,total,dice){const p=P(),o=investReturn(a,total);
   commit(()=>{p.M=p.M-a+o.ret;p.used.invest=true;p.lastInvest={a,total,dice,label:o.label,ret:o.ret};
     log(p,`Invested ${a} M, rolled ${total} (${o.label}): got back ${o.ret} M (${o.ret-a>=0?'+':''}${o.ret-a})`);});
@@ -542,7 +545,7 @@ function renderSetup(){
 function rulesHTML(){return`<details><summary>Quick rules</summary><ul class="small">
   <li>Start: M 0, T 10, H 10. Each round is one decade, from age 20 to 80.</li>
   <li>Each round T refreshes (10, 8, 6, 8, 10, 10, 10) and H drops with age (0, 1, 1, 2, 2, 2, 1). The app does this automatically.</li>
-  <li>In any order: buy experiences, buy time and recover health as many times as your M, T and H allow. Earn money, invest, insurance and give legacy once per round.</li>
+  <li>In any order: buy experiences as many times as your M, T and H allow, buy time up to ${MAX_TIME} times and recover health up to ${MAX_HEAL} times. Earn money, invest, insurance and give legacy once per round.</li>
   <li>Stable job: −3 T, +6 M. High-risk career: −2 T, dare, PASS +18 M. Only in rounds 1–5.</li>
   <li>Experience LEP = base LEP × (1 + (H − Min H) × 0.2), rounded.</li>
   <li>Memory dividend: at the end of each round from 20 to 70, total LEP grows by 10% (snowball).</li>
@@ -600,8 +603,8 @@ function renderTurn(){const p=P(),r=state.round,R=ROUNDS[r],t=state.turn;
   ${actionCard('Buy a life experience','exp','LEP cards',expBody,p)}
   ${actionCard('Invest money','invest','Once per round',investBody,p)}
   <div class="row" style="align-items:stretch">
-  ${actionCard('Buy time','time','2 M → 2 T',`<div class="row">${btn('time','Buy 2 T',p)}</div>`,p)}
-  ${actionCard('Recover health','heal',canHeal(r)?'2 T → 1 H':'Up to age 50',`<div class="row">${btn('heal','Gain 1 H',p)}</div>`,p)}
+  ${actionCard('Buy time','time','2 M → 2 T'+usesLeft(p,'time',MAX_TIME),`<div class="row">${btn('time','Buy 2 T',p)}</div>`,p)}
+  ${actionCard('Recover health','heal',canHeal(r)?'2 T → 1 H'+usesLeft(p,'heal',MAX_HEAL):'Up to age 50',`<div class="row">${btn('heal','Gain 1 H',p)}</div>`,p)}
   </div>
   ${actionCard('Buy insurance','insure',canInsure(r)?'2 M':'Closed from 70',`<p class="small muted">Covers this round. Minor illness: no effect. Critical: −1 H only, +18 M. Accident: H becomes 3, +30 M (if H is 3 or less, still dies with +30 M legacy).</p><div class="row">${btn('insure','Insure this round',p)}</div>`,p)}
   ${actionCard('Give legacy to children','give','1 M = 2 LEP',giveBody,p)}
